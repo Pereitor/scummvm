@@ -71,9 +71,24 @@ PictureMgr::PictureMgr(AgiBase *agi, GfxMgr *gfx) {
  * Draws a pixel to the visual and/or control screen.
  */
 void PictureMgr::putVirtPixel(int16 x, int16 y) {
+
 	if (!getGraphicsCoordinates(x, y)) {
 		return;
 	}
+
+// Aplicar escalado a las coordenadas antes de validarlas
+    int16 scaledX = x * SCALE_FACTOR;
+    int16 scaledY = y * SCALE_FACTOR;
+    
+    // Validar coordenadas escaladas
+    /*
+    if (!(0 <= scaledX && scaledX < (_width * SCALE_FACTOR) && 0 <= scaledY && scaledY < (_height * SCALE_FACTOR))) {
+        return;
+    }
+    */
+
+	//x = x * SCALE_FACTOR; // Scale x-coordinate (e.g., 6x for 960 width from 160)
+	//y = y * SCALE_FACTOR; // Scale y-coordinate (e.g., 6x for 1008 height from 168)
 
 	byte drawMask= 0;
 	if (_priOn)
@@ -81,7 +96,12 @@ void PictureMgr::putVirtPixel(int16 x, int16 y) {
 	if (_scrOn)
 		drawMask |= GFX_SCREEN_MASK_VISUAL;
 
+	//for (int16 dy = 0; dy < SCALE_FACTOR; dy++) {
+        //for (int16 dx = 0; dx < SCALE_FACTOR; dx++) {
 	_gfx->putPixel(x, y, drawMask, _scrColor, _priColor);
+	//_gfx->putPixel(scaledX, scaledY, drawMask, _scrColor, _priColor);
+//}
+//}
 }
 
 /**
@@ -163,6 +183,9 @@ bool PictureMgr::getNextCoordinates(byte &x, byte &y) {
  */
 bool PictureMgr::getGraphicsCoordinates(int16 &x, int16 &y) {
 	return (0 <= x && x < _width && 0 <= y && y < _height);
+	/*
+	return (0 <= x && x < (_width * SCALE_FACTOR) && 0 <= y && y < (_height * SCALE_FACTOR));
+	*/
 }
 
 /**
@@ -286,8 +309,8 @@ void PictureMgr::plotPattern(byte x, byte y) {
 	uint8 temp8;
 	uint16 temp16;
 
-	int pen_x = x;
-	int pen_y = y;
+	int pen_x = x * SCALE_FACTOR; // no sembla fer res
+	int pen_y = y * SCALE_FACTOR;
 	uint16 pen_size = (_patCode & 0x07);
 
 	circle_ptr = &circle_data[circle_list[pen_size]];
@@ -310,7 +333,7 @@ void PictureMgr::plotPattern(byte x, byte y) {
 	pen_y = pen_y - pen_size;
 	if (pen_y < 0) pen_y = 0;
 
-	temp16 = 167 - (2 * pen_size);
+	temp16 = 167 - (2 * pen_size); // WTF?? @todo - era 167
 	if (pen_y >= temp16)
 		pen_y = temp16;
 
@@ -539,10 +562,22 @@ void PictureMgr::draw_SetNibblePriority() {
  *   (fixed >>2 to >>1 and some other bugs like x1 instead of y1, etc.)
  */
 void PictureMgr::draw_Line(int16 x1, int16 y1, int16 x2, int16 y2) {
-	x1 = CLIP<int16>(x1, 0, _width - 1);
-	x2 = CLIP<int16>(x2, 0, _width - 1);
-	y1 = CLIP<int16>(y1, 0, _height - 1);
-	y2 = CLIP<int16>(y2, 0, _height - 1);
+	x1 = x1 * SCALE_FACTOR;
+	y1 = y1 * SCALE_FACTOR;
+
+	x2 = x2 * SCALE_FACTOR;
+	y2 = y2 * SCALE_FACTOR;
+
+	//x1 = CLIP<int16>(x1, 0, _width - 1);
+	//x2 = CLIP<int16>(x2, 0, _width - 1);
+	//y1 = CLIP<int16>(y1, 0, _height - 1);
+	//y2 = CLIP<int16>(y2, 0, _height - 1);
+
+	// Clip the scaled coordinates to the scaled image bounds
+	x1 = CLIP<int16>(x1, 0, (_width * SCALE_FACTOR) - 1);
+	x2 = CLIP<int16>(x2, 0, (_width * SCALE_FACTOR) - 1);
+	y1 = CLIP<int16>(y1, 0, (_height * SCALE_FACTOR) - 1);
+	y2 = CLIP<int16>(y2, 0, (_height * SCALE_FACTOR) - 1);
 
 	// Vertical line
 
@@ -659,11 +694,17 @@ void PictureMgr::draw_LineAbsolute() {
 	if (!getNextCoordinates(x1, y1))
 		return;
 
+	//x1 = x1 * SCALE_FACTOR;
+	//y1 = y1 * SCALE_FACTOR;
+
 	putVirtPixel(x1, y1);
 
 	for (;;) {
 		if (!getNextCoordinates(x2, y2))
 			break;
+
+		//x2 = x2 * SCALE_FACTOR;
+		//y2 = y2 * SCALE_FACTOR;
 
 		draw_Line(x1, y1, x2, y2);
 		x1 = x2;
@@ -688,7 +729,10 @@ void PictureMgr::draw_Fill() {
 void PictureMgr::draw_Fill(int16 x, int16 y) {
 	if (!_scrOn && !_priOn)
 		return;
-
+	/*
+	x = x * SCALE_FACTOR;
+	y = y * SCALE_FACTOR;
+	*/
 	// Push initial pixel on the stack
 	Common::Stack<Common::Point> stack;
 	stack.push(Common::Point(x, y));
@@ -701,8 +745,9 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
 			continue;
 
 		// Scan for left border
+		
 		uint c;
-		for (c = p.x - 1; draw_FillCheck(c, p.y, true); c--)
+		for (c = (p.x * SCALE_FACTOR) - 1; draw_FillCheck(c, p.y * SCALE_FACTOR, true); c--)
 			;
 
 		bool newspanUp = true;
@@ -738,10 +783,15 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
  * Troll's Tale custom flood fill behavior when drawing the Troll over pictures.
  */
 bool PictureMgr::draw_FillCheck(int16 x, int16 y, bool horizontalCheck) {
+	/*
+	x = x / SCALE_FACTOR;
+	y = y / SCALE_FACTOR;
+	*/
 	if (!getGraphicsCoordinates(x, y)) {
 		return false;
 	}
-
+	/*
+	*/
 	byte screenColor = _gfx->getColor(x, y);
 	byte screenPriority = _gfx->getPriority(x, y);
 
@@ -765,8 +815,8 @@ void PictureMgr::decodePicture(int16 resourceNr, bool clearScreen, bool agi256, 
 	_resourceNr = resourceNr;
 	_data = _vm->_game.pictures[resourceNr].rdata;
 	_dataSize = _vm->_game.dirPic[resourceNr].len;
-	_width = width;
-	_height = height;
+	_width = width; //	*SCALE_FACTOR;                   // Scale script width (160 -> 960)
+	_height = height; // *SCALE_FACTOR; // Scale script height (168 -> 1008)
 
 	if (clearScreen) {
 		_gfx->clear(15, getInitialPriorityColor()); // white, priority 4 or 1
@@ -794,8 +844,8 @@ void PictureMgr::decodePicture(int16 resourceNr, bool clearScreen, bool agi256, 
 void PictureMgr::decodePictureFromBuffer(byte *data, uint32 length, bool clearScreen, int16 width, int16 height) {
 	_data = data;
 	_dataSize = length;
-	_width = width;
-	_height = height;
+	_width = width; //	*SCALE_FACTOR;                   // Scale script width (160 -> 960)
+	_height = height; // * SCALE_FACTOR; // Scale script height (168 -> 1008)
 
 	if (clearScreen) {
 		_gfx->clear(15, getInitialPriorityColor()); // white, priority 4 or 1

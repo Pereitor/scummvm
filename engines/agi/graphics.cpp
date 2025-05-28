@@ -334,12 +334,15 @@ void GfxMgr::copyDisplayRectToScreen(int16 x, int16 adjX, int16 y, int16 adjY, i
 
 void GfxMgr::copyDisplayRectToScreenUsingGamePos(int16 x, int16 y, int16 width, int16 height) {
 	translateGameRectToDisplayScreen(x, y, width, height);
+	//_vm->_system->copyRectToScreen(_displayScreen + (y * _displayScreenWidth), _displayScreenWidth, x, y, width, height);
 	_vm->_system->copyRectToScreen(_displayScreen + (y * _displayScreenWidth) + x, _displayScreenWidth, x, y, width, height);
+
 }
 
 void GfxMgr::copyDisplayRectToScreenUsingVisualPos(int16 x, int16 y, int16 width, int16 height) {
 	translateVisualRectToDisplayScreen(x, y, width, height);
 	_vm->_system->copyRectToScreen(_displayScreen + (y * _displayScreenWidth) + x, _displayScreenWidth, x, y, width, height);
+	//_vm->_system->copyRectToScreen(_displayScreen + (y * _displayScreenWidth), _displayScreenWidth, x, y, width, height);
 }
 
 void GfxMgr::copyDisplayToScreen() {
