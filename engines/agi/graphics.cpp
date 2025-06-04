@@ -151,6 +151,7 @@ void GfxMgr::initVideo() {
 		break;
 	}
 
+	/*
 	if (_font->isFontHires() || forceHires) {
 		// Upscaling enable
 		_upscaledHires = DISPLAY_UPSCALED_640x400;
@@ -162,6 +163,14 @@ void GfxMgr::initVideo() {
 		_displayWidthMulAdjust = 2;
 		_displayHeightMulAdjust = 1;
 	}
+	*/
+	_displayScreenWidth = DISPLAY_DEFAULT_WIDTH;
+	_displayScreenHeight = DISPLAY_DEFAULT_HEIGHT;
+	_displayFontWidth = 24;
+	_displayFontHeight = 24;
+
+	//_displayWidthMulAdjust = 1;
+	//_displayHeightMulAdjust = 1;
 
 	// set up mouse cursors
 	switch (_vm->_renderMode) {
@@ -244,7 +253,7 @@ uint16 GfxMgr::getRenderStartDisplayOffsetY() const {
 // Game screen to 320x200 -> x * 2, y + renderStart
 // Game screen to 640x400 -> x * 4, (y * 2) + renderStart
 void GfxMgr::translateGamePosToDisplayScreen(int16 &x, int16 &y) const {
-	x = x * (2 + _displayWidthMulAdjust);
+	x = x * (1 + _displayWidthMulAdjust);
 	y = y * (1 + _displayHeightMulAdjust) + _renderStartDisplayOffsetY;
 }
 
@@ -252,7 +261,7 @@ void GfxMgr::translateGamePosToDisplayScreen(int16 &x, int16 &y) const {
 // Visual to 320x200 -> x * 2, y
 // Visual to 640x400 -> x * 4, y * 2
 void GfxMgr::translateVisualPosToDisplayScreen(int16 &x, int16 &y) const {
-	x = x * (2 + _displayWidthMulAdjust);
+	x = x * (1 + _displayWidthMulAdjust);
 	y = y * (1 + _displayHeightMulAdjust);
 }
 
@@ -261,7 +270,7 @@ void GfxMgr::translateVisualPosToDisplayScreen(int16 &x, int16 &y) const {
 // Display screen to 640x400 -> x / 4, (y / 2) - renderStart
 void GfxMgr::translateDisplayPosToGameScreen(int16 &x, int16 &y) const {
 	y -= _renderStartDisplayOffsetY; // remove status bar line
-	x = x / (2 + _displayWidthMulAdjust);
+	x = x / (1 + _displayWidthMulAdjust);
 	y = y / (1 + _displayHeightMulAdjust);
 	if (y < 0)
 		y = 0;
@@ -271,13 +280,13 @@ void GfxMgr::translateDisplayPosToGameScreen(int16 &x, int16 &y) const {
 
 // Translates dimension from visual screen to display screen
 void GfxMgr::translateVisualDimensionToDisplayScreen(int16 &width, int16 &height) const {
-	width = width * (2 + _displayWidthMulAdjust);
+	width = width * (1 + _displayWidthMulAdjust);
 	height = height * (1 + _displayHeightMulAdjust);
 }
 
 // Translates dimension from display screen to visual screen
 void GfxMgr::translateDisplayDimensionToVisualScreen(int16 &width, int16 &height) const {
-	width = width / (2 + _displayWidthMulAdjust);
+	width = width / (1 + _displayWidthMulAdjust);
 	height = height / (1 + _displayHeightMulAdjust);
 }
 
@@ -316,6 +325,7 @@ void GfxMgr::copyDisplayRectToScreen(int16 x, int16 y, int16 width, int16 height
 }
 
 void GfxMgr::copyDisplayRectToScreen(int16 x, int16 adjX, int16 y, int16 adjY, int16 width, int16 adjWidth, int16 height, int16 adjHeight) {
+	/*
 	switch (_upscaledHires) {
 	case DISPLAY_UPSCALED_DISABLED:
 		break;
@@ -324,9 +334,16 @@ void GfxMgr::copyDisplayRectToScreen(int16 x, int16 adjX, int16 y, int16 adjY, i
 		adjWidth *= 2; adjHeight *= 2;
 		break;
 	default:
-		assert(0);
-		break;
-	}
+	*/
+	/*
+		adjX *= AGI_SCALE_FACTOR;
+		adjY *= AGI_SCALE_FACTOR;
+		adjWidth *= AGI_SCALE_FACTOR;
+		adjHeight *= AGI_SCALE_FACTOR;
+		*/
+		//assert(0);
+	//	break;
+	//}
 	x += adjX; y += adjY;
 	width += adjWidth; height += adjHeight;
 	_vm->_system->copyRectToScreen(_displayScreen + y * _displayScreenWidth + x, _displayScreenWidth, x, y, width, height);
@@ -624,43 +641,49 @@ void GfxMgr::render_BlockEGA(int16 x, int16 y, int16 width, int16 height) {
 	uint32 offsetDisplay = getDisplayOffsetToGameScreenPos(x, y);
 	int16 remainingHeight = height;
 	byte curColor = 0;
-	int16 displayWidth = width * (2 + _displayWidthMulAdjust);
+	int16 displayWidth = width; // * (AGI_SCALE_FACTOR + _displayWidthMulAdjust);
 
 	while (remainingHeight) {
 		int16 remainingWidth = width;
 
 		switch (_upscaledHires) {
-		case DISPLAY_UPSCALED_DISABLED:
-			while (remainingWidth) {
-				curColor = _activeScreen[offsetVisual++];
-				_displayScreen[offsetDisplay++] = curColor;
-				_displayScreen[offsetDisplay++] = curColor;
-				remainingWidth--;
-			}
-			break;
-		case DISPLAY_UPSCALED_640x400:
-			while (remainingWidth) {
-				curColor = _activeScreen[offsetVisual++];
-				memset(&_displayScreen[offsetDisplay], curColor, 4);
-				memset(&_displayScreen[offsetDisplay + _displayScreenWidth], curColor, 4);
-				offsetDisplay += 4;
-				remainingWidth--;
-			}
-			break;
-		default:
-			assert(0);
-			break;
+			case DISPLAY_UPSCALED_DISABLED:
+				while (remainingWidth) {
+					curColor = _activeScreen[offsetVisual++];
+					
+					_displayScreen[offsetDisplay++] = curColor;
+					//_displayScreen[offsetDisplay++] = curColor;
+					/*
+					memset(&_displayScreen[offsetDisplay], curColor, 1);
+					memset(&_displayScreen[offsetDisplay + _displayScreenWidth], curColor, 1);
+					offsetDisplay += 1;
+					*/
+					remainingWidth--;
+				}
+				break;
+			case DISPLAY_UPSCALED_640x400:
+				while (remainingWidth) {
+					curColor = _activeScreen[offsetVisual++];
+					memset(&_displayScreen[offsetDisplay], curColor, 4);
+					memset(&_displayScreen[offsetDisplay + _displayScreenWidth], curColor, 4);
+					offsetDisplay += 4;
+					remainingWidth--;
+				}
+				break;
+			default:
+				assert(0);
+				break;
 		}
 
 		offsetVisual += SCRIPT_WIDTH - width;
 		offsetDisplay += _displayScreenWidth - displayWidth;
 
 		switch (_upscaledHires) {
-		case DISPLAY_UPSCALED_640x400:
-			offsetDisplay += _displayScreenWidth;
-			break;
-		default:
-			break;
+			case DISPLAY_UPSCALED_640x400:
+				offsetDisplay += _displayScreenWidth;
+				break;
+			default:
+				break;
 		}
 
 		remainingHeight--;
@@ -1199,8 +1222,8 @@ void GfxMgr::drawStringOnDisplay(int16 x, int16 y, const char *text, byte foregr
 void GfxMgr::drawStringOnDisplay(int16 x, int16 adjX, int16 y, int16 adjY, const char *text, byte foregroundColor, byte backgroundColor) {
 	switch (_upscaledHires) {
 	case DISPLAY_UPSCALED_DISABLED:
-		x += adjX;
-		y += adjY;
+		x += adjX * 3;
+		y += adjY *3 ;
 		break;
 	case DISPLAY_UPSCALED_640x400:
 		x += adjX * 2;
@@ -1374,10 +1397,10 @@ int16 GfxMgr::priorityToY(int16 priority) const {
 	uint16 agiVersion = _vm->getVersion();
 
 	if (agiVersion <= 0x3086) {
-		return 168; // Buggy behavior, see above
+		return SCRIPT_HEIGHT / 3; // Buggy behavior, see above
 	}
 
-	int16 currentY = 167;
+	int16 currentY = (SCRIPT_HEIGHT / 3) - 1; // 167;
 	while (_priorityTable[currentY] >= priority) {
 		currentY--;
 		if (currentY < 0) // Original AGI didn't do this, we abort in that case and return -1
@@ -1491,6 +1514,25 @@ int GfxMgr::getAGIPalFileNum() const {
 }
 
 void GfxMgr::initMouseCursor(MouseCursorData *mouseCursor, const byte *bitmapData, uint16 width, uint16 height, int hotspotX, int hotspotY) {
+	/*
+		mouseCursor->bitmapDataAllocated = (byte *)malloc(width * height);
+		mouseCursor->bitmapData = mouseCursor->bitmapDataAllocated;
+
+		// Upscale mouse cursor
+		byte *upscaledData = mouseCursor->bitmapDataAllocated;
+
+		for (uint16 y = 0; y < height; y++) {
+			for (uint16 x = 0; x < width; x++) {
+				byte curColor = *bitmapData++;
+				upscaledData[x * 2 + 0] = curColor;
+				upscaledData[x * 2 + 1] = curColor;
+				upscaledData[x * 2 + (width) + 0] = curColor;
+				upscaledData[x * 2 + (width) + 1] = curColor;
+			}
+			upscaledData += width * 3;
+		}
+	*/
+
 	switch (_upscaledHires) {
 	case DISPLAY_UPSCALED_DISABLED:
 		mouseCursor->bitmapData = bitmapData;
@@ -1522,7 +1564,7 @@ void GfxMgr::initMouseCursor(MouseCursorData *mouseCursor, const byte *bitmapDat
 	default:
 		assert(0);
 		break;
-	}
+	}	
 	mouseCursor->width = width;
 	mouseCursor->height = height;
 	mouseCursor->hotspotX = hotspotX;

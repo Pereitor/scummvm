@@ -539,10 +539,23 @@ void PictureMgr::draw_SetNibblePriority() {
  *   (fixed >>2 to >>1 and some other bugs like x1 instead of y1, etc.)
  */
 void PictureMgr::draw_Line(int16 x1, int16 y1, int16 x2, int16 y2) {
+
+	x1 = x1 * AGI_SCALE_FACTOR;
+	y1 = y1 * AGI_SCALE_FACTOR;
+	x2 = x2 * AGI_SCALE_FACTOR;
+	y2 = y2 * AGI_SCALE_FACTOR;
+
+	
+	x1 = CLIP<int16>(x1, 0, (_width * AGI_SCALE_FACTOR) - 1);
+	x2 = CLIP<int16>(x2, 0, (_width * AGI_SCALE_FACTOR) - 1);
+	y1 = CLIP<int16>(y1, 0, (_height * AGI_SCALE_FACTOR) - 1);
+	y2 = CLIP<int16>(y2, 0, (_height * AGI_SCALE_FACTOR) - 1);
+	/*
 	x1 = CLIP<int16>(x1, 0, _width - 1);
 	x2 = CLIP<int16>(x2, 0, _width - 1);
 	y1 = CLIP<int16>(y1, 0, _height - 1);
 	y2 = CLIP<int16>(y2, 0, _height - 1);
+	*/
 
 	// Vertical line
 
@@ -689,6 +702,9 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
 	if (!_scrOn && !_priOn)
 		return;
 
+	x = x * AGI_SCALE_FACTOR;
+	y = y * AGI_SCALE_FACTOR;
+
 	// Push initial pixel on the stack
 	Common::Stack<Common::Point> stack;
 	stack.push(Common::Point(x, y));
@@ -737,7 +753,8 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
  * line horizontally for a boundary. This is used by PictureMgr_Troll to handle
  * Troll's Tale custom flood fill behavior when drawing the Troll over pictures.
  */
-bool PictureMgr::draw_FillCheck(int16 x, int16 y, bool horizontalCheck) {
+bool PictureMgr::draw_FillCheck(int16 x, int16 y, bool horizontalCheck) {	
+
 	if (!getGraphicsCoordinates(x, y)) {
 		return false;
 	}
@@ -762,6 +779,7 @@ bool PictureMgr::draw_FillCheck(int16 x, int16 y, bool horizontalCheck) {
  * picture and optionally clears the screens before drawing.
  */
 void PictureMgr::decodePicture(int16 resourceNr, bool clearScreen, bool agi256, int16 width, int16 height) {
+
 	_resourceNr = resourceNr;
 	_data = _vm->_game.pictures[resourceNr].rdata;
 	_dataSize = _vm->_game.dirPic[resourceNr].len;
