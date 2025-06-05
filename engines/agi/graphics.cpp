@@ -324,28 +324,27 @@ void GfxMgr::copyDisplayRectToScreen(int16 x, int16 y, int16 width, int16 height
 	_vm->_system->copyRectToScreen(_displayScreen + y * _displayScreenWidth + x, _displayScreenWidth, x, y, width, height);
 }
 
-void GfxMgr::copyDisplayRectToScreen(int16 x, int16 adjX, int16 y, int16 adjY, int16 width, int16 adjWidth, int16 height, int16 adjHeight) {
-	/*
+void GfxMgr::copyDisplayRectToScreen(int16 x, int16 adjX, int16 y, int16 adjY, int16 width, int16 adjWidth, int16 height, int16 adjHeight) {	
 	switch (_upscaledHires) {
 	case DISPLAY_UPSCALED_DISABLED:
-		break;
+		// no sembla afectar		
+		adjX *= AGI_SCALE_FACTOR;
+		adjY *= AGI_SCALE_FACTOR;
+		adjWidth *= AGI_SCALE_FACTOR;
+		adjHeight *= AGI_SCALE_FACTOR;
+		break;		
 	case DISPLAY_UPSCALED_640x400:
 		adjX *= 2; adjY *= 2;
 		adjWidth *= 2; adjHeight *= 2;
 		break;
 	default:
-	*/
-	/*
-		adjX *= AGI_SCALE_FACTOR;
-		adjY *= AGI_SCALE_FACTOR;
-		adjWidth *= AGI_SCALE_FACTOR;
-		adjHeight *= AGI_SCALE_FACTOR;
-		*/
-		//assert(0);
-	//	break;
-	//}
+		assert(0);
+		break;
+	}
 	x += adjX; y += adjY;
 	width += adjWidth; height += adjHeight;
+	//width = width * AGI_SCALE_FACTOR;
+	//height = height * AGI_SCALE_FACTOR;
 	_vm->_system->copyRectToScreen(_displayScreen + y * _displayScreenWidth + x, _displayScreenWidth, x, y, width, height);
 }
 
@@ -1125,7 +1124,9 @@ void GfxMgr::drawDisplayRect(int16 x, int16 y, int16 width, int16 height, byte c
 void GfxMgr::drawDisplayRect(int16 x, int16 adjX, int16 y, int16 adjY, int16 width, int16 adjWidth, int16 height, int16 adjHeight, byte color, bool copyToScreen) {
 	switch (_upscaledHires) {
 	case DISPLAY_UPSCALED_DISABLED:
-		x += adjX; y += adjY;
+		//x += adjX; y += adjY;
+		x += adjX * 3;
+		y += adjY * 3;
 		width += adjWidth; height += adjHeight;
 		break;
 	case DISPLAY_UPSCALED_640x400:

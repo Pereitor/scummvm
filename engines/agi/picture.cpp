@@ -540,14 +540,14 @@ void PictureMgr::draw_SetNibblePriority() {
  */
 void PictureMgr::draw_Line(int16 x1, int16 y1, int16 x2, int16 y2) {
 
-	x1 = x1 * AGI_SCALE_FACTOR;
+	x1 = x1 * AGI_SCALE_FACTOR * 2;
 	y1 = y1 * AGI_SCALE_FACTOR;
-	x2 = x2 * AGI_SCALE_FACTOR;
+	x2 = x2 * AGI_SCALE_FACTOR * 2;
 	y2 = y2 * AGI_SCALE_FACTOR;
 
 	
-	x1 = CLIP<int16>(x1, 0, (_width * AGI_SCALE_FACTOR) - 1);
-	x2 = CLIP<int16>(x2, 0, (_width * AGI_SCALE_FACTOR) - 1);
+	x1 = CLIP<int16>(x1, 0, (_width * AGI_SCALE_FACTOR * 2) - 1);
+	x2 = CLIP<int16>(x2, 0, (_width * AGI_SCALE_FACTOR * 2) - 1);
 	y1 = CLIP<int16>(y1, 0, (_height * AGI_SCALE_FACTOR) - 1);
 	y2 = CLIP<int16>(y2, 0, (_height * AGI_SCALE_FACTOR) - 1);
 	/*
@@ -702,7 +702,7 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
 	if (!_scrOn && !_priOn)
 		return;
 
-	x = x * AGI_SCALE_FACTOR;
+	x = x * AGI_SCALE_FACTOR * 2;
 	y = y * AGI_SCALE_FACTOR;
 
 	// Push initial pixel on the stack
@@ -783,8 +783,8 @@ void PictureMgr::decodePicture(int16 resourceNr, bool clearScreen, bool agi256, 
 	_resourceNr = resourceNr;
 	_data = _vm->_game.pictures[resourceNr].rdata;
 	_dataSize = _vm->_game.dirPic[resourceNr].len;
-	_width = width;
-	_height = height;
+	_width = width * AGI_SCALE_FACTOR; // sembla que millora alguna cosa...
+	_height = height * AGI_SCALE_FACTOR; // ...en les pantalles inicials
 
 	if (clearScreen) {
 		_gfx->clear(15, getInitialPriorityColor()); // white, priority 4 or 1
@@ -812,8 +812,8 @@ void PictureMgr::decodePicture(int16 resourceNr, bool clearScreen, bool agi256, 
 void PictureMgr::decodePictureFromBuffer(byte *data, uint32 length, bool clearScreen, int16 width, int16 height) {
 	_data = data;
 	_dataSize = length;
-	_width = width;
-	_height = height;
+	_width = width * AGI_SCALE_FACTOR;
+	_height = height * AGI_SCALE_FACTOR;
 
 	if (clearScreen) {
 		_gfx->clear(15, getInitialPriorityColor()); // white, priority 4 or 1
