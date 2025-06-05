@@ -121,6 +121,7 @@ MinigameTriangle::MinigameTriangle(MinigameManager *runtime) {
 		Node &node = _nodes.back();
 		for (int angle = 1; angle <= 3; ++angle) {
 			snprintf(name, 63, "%s%02d_%1d", faceNameBegin, num + 1, angle);
+			debugC(5, kDebugMinigames, "Loading face object: %s", name);
 			QDObject obj = _runtime->getObject(name);
 			node._face.push_back(obj);
 			_positions.push_back(obj->R());
@@ -148,10 +149,12 @@ MinigameTriangle::MinigameTriangle(MinigameManager *runtime) {
 	for (int num = 1; num <= 2; ++num) {
 		for (int angle = 1; angle <= 3; ++angle) {
 			snprintf(name, 63, "%s%1d_%1d", backNameBegin, num, angle);
+			debugC(5, kDebugMinigames, "Loading back object: %s", name);
 			if (!_backSides[(num - 1) * 3 + angle - 1].load(name, _runtime))
 				return;
 		}
 		snprintf(name, 63, "%s%1d", selectNameBegin, num);
+		debugC(5, kDebugMinigames, "Loading select object: %s", name);
 		if (!_selectBorders[num - 1].load(name, _runtime))
 			return;
 	}
@@ -198,7 +201,7 @@ void MinigameTriangle::Node::debugInfo() const {
 	debugC(5, kDebugMinigames, "name:\"%s\" state:\"%s\" number:%d rotation:%d flip:%d isBack:%d highlight:%d animated:%d", obj().getName(), obj()->current_state_name(), _number, _rotation, _flip, _isBack, _highlight, _animated);
 }
 
-const char *MinigameTriangle::Node::getFaceStateName(int angle, bool selected, bool animated, bool instantaneous) {
+const Common::String MinigameTriangle::Node::getFaceStateName(int angle, bool selected, bool animated, bool instantaneous) {
 	assert(!selected || !animated); // анимированные выделенными быть не могут
 
 	static const char *angleNames[3] = {"0", "120", "240"};
@@ -207,7 +210,7 @@ const char *MinigameTriangle::Node::getFaceStateName(int angle, bool selected, b
 	Common::String out;
 
 	out = Common::String::format("%s%s%s", (animated ? "02_" : "01_"), angleNames[angle], (selected || instantaneous ? "_sel" : ""));
-	return out.c_str();
+	return out;
 }
 
 const char *MinigameTriangle::Node::getBackStateName(bool selected, bool animated, bool instantaneous) {
@@ -249,7 +252,7 @@ void MinigameTriangle::updateNode(Node &node, int position, int flip, bool quick
 		QDObject &face = node._face[flip];
 		face->set_R(slotCoord(position, flip));
 		face->update_screen_R();
-		face.setState(Node::getFaceStateName(node._rotation, node._highlight, node._animated, quick));
+		face.setState(Node::getFaceStateName(node._rotation, node._highlight, node._animated, quick).c_str());
 	}
 }
 
@@ -343,7 +346,6 @@ void MinigameTriangle::endSwapNodes(int pos1, int pos2) {
 }
 
 bool MinigameTriangle::animate(float dt) {
-	warning("STUB: MinigameTriangle::animate()");
 
 	if (_animationState == NO_ANIMATION)
 		return false;
@@ -367,10 +369,10 @@ bool MinigameTriangle::animate(float dt) {
 		releaseNodeBack(node2);
 
 		for (auto &it : node1._face)
-			it.setState(Node::getFaceStateName(0, false, false, false));
+			it.setState(Node::getFaceStateName(0, false, false, false).c_str());
 
 		for (auto &it : node2._face)
-			it.setState(Node::getFaceStateName(0, false, false, false));
+			it.setState(Node::getFaceStateName(0, false, false, false).c_str());
 
 		updateNode(node1, _animatedNodes[1], destination(_animatedNodes[0], _animatedNodes[1]), true);
 		updateNode(node2, _animatedNodes[0], destination(_animatedNodes[1], _animatedNodes[0]), true);
@@ -478,8 +480,11 @@ void MinigameTriangle::quant(float dt) {
 		else if (compatible(_selected, mousePos)) { // поменять фишки местами
 			startAnimation = _selected;
 			_selected = -1;
-		} else
+		} else {
 			_selected = -1;
+			if (_quickReselect)
+				_selected = mousePos;
+		}
 	}
 
 	if (_selected != lastSelected) {
@@ -498,8 +503,6 @@ void MinigameTriangle::quant(float dt) {
 			}
 		}
 	}
-
-	warning("STUB: MinigameTriangle::quant()");
 
 	if (_hovered != mousePos || _selected != lastSelected) {
 		highlight(_hovered, false);

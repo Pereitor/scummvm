@@ -546,10 +546,8 @@ bool MinigameManager::quant(float dt) {
 		if (_game_help)
 			_game_help.setState(_game_help_enabled ? _game_help_state_name.c_str() : "off");
 
-#ifdef _DEBUG
-		if (keyPressed(VK_MULTIPLY, true))
+		if (keyPressed(VK_MULTIPLY) || (keyPressed(VK_LSHIFT) && keyPressed('8')))
 			_game->setState(MinigameInterface::GAME_WIN);
-#endif
 
 		switch (_game->state()) {
 		case MinigameInterface::GAME_LOST:
@@ -723,8 +721,16 @@ const char *MinigameManager::parameter(const char *name, const char *def) const 
 }
 
 bool MinigameManager::mouseLeftPressed() const {
-	if (_invertMouseButtons)
+	if (_invertMouseButtons) {
+		if (keyPressed(VK_LMENU)) {
+			return _engine->is_mouse_event_active(qdEngineInterface::MOUSE_EV_LEFT_DOWN);
+		}
 		return _engine->is_mouse_event_active(qdEngineInterface::MOUSE_EV_RIGHT_DOWN);
+	}
+
+	if (keyPressed(VK_LMENU))
+		return false;
+
 	return _engine->is_mouse_event_active(qdEngineInterface::MOUSE_EV_LEFT_DOWN);
 
 }
@@ -732,6 +738,10 @@ bool MinigameManager::mouseLeftPressed() const {
 bool MinigameManager::mouseRightPressed() const {
 	if (_invertMouseButtons)
 		return _engine->is_mouse_event_active(qdEngineInterface::MOUSE_EV_LEFT_DOWN);
+
+	if (keyPressed(VK_LMENU)) {
+		return _engine->is_mouse_event_active(qdEngineInterface::MOUSE_EV_LEFT_DOWN);
+	}
 	return _engine->is_mouse_event_active(qdEngineInterface::MOUSE_EV_RIGHT_DOWN);
 
 }
@@ -809,7 +819,7 @@ QDObject MinigameManager::getObject(const char *name) const {
 }
 
 bool MinigameManager::testObject(const char *name) const {
-	if (qdMinigameObjectInterface *obj = _scene->object_interface(name)) {
+	if (qdMinigameObjectInterface *obj = _scene->object_interface(name, true)) {
 		_scene->release_object_interface(obj);
 		return true;
 	}

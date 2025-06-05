@@ -24,8 +24,8 @@
 
 namespace Agi {
 
-#define _DEFAULT_WIDTH      160
-#define _DEFAULT_HEIGHT     168
+#define _DEFAULT_WIDTH      960 // 160
+#define _DEFAULT_HEIGHT     504 // 168
 
 /**
  * AGI picture resource.

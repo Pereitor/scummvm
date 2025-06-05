@@ -26,16 +26,28 @@
 
 namespace Agi {
 
-#define SCRIPT_WIDTH    160
-#define SCRIPT_HEIGHT   168
-#define VISUAL_WIDTH    160
-#define VISUAL_HEIGHT   200
-#define DISPLAY_DEFAULT_WIDTH   320
-#define DISPLAY_DEFAULT_HEIGHT  200
+// Original dimensions (for reference)
+#define ORIGINAL_SCRIPT_WIDTH    160
+#define ORIGINAL_SCRIPT_HEIGHT   168
+#define ORIGINAL_VISUAL_WIDTH    160
+#define ORIGINAL_VISUAL_HEIGHT   200
 
-enum GfxScreenUpscaledMode {
+// Scaled dimensions (3x)
+#define SCRIPT_WIDTH    960
+#define SCRIPT_HEIGHT   504
+#define VISUAL_WIDTH    960
+#define VISUAL_HEIGHT   600
+#define DISPLAY_DEFAULT_WIDTH   960
+#define DISPLAY_DEFAULT_HEIGHT  600
+
+// Scaling factor
+#define AGI_SCALE_FACTOR 3
+
+enum GfxScreenUpscaledMode {	
 	DISPLAY_UPSCALED_DISABLED = 0,
 	DISPLAY_UPSCALED_640x400  = 1
+	//,
+	//DISPLAY_PROVES = 2
 };
 
 class AgiBase;
@@ -113,10 +125,10 @@ private:
 	uint _displayPixels;
 
 	byte *_activeScreen;
-	byte *_gameScreen;     // 160x168 - screen, where the actual game content is drawn to (actual graphics, not including status line, prompt, etc.)
-	byte *_priorityScreen; // 160x168 - screen contains priority information of the game screen
-	// the term "visual screen" is effectively the display screen, but at 160x200 resolution. Used for coordinate translation
-	byte *_displayScreen;  // 320x200 or 640x400 - screen, that the game is rendered to and which is then copied to framebuffer
+	byte *_gameScreen;     // 480x504 (scaled 3x from 160x168) - screen, where the actual game content is drawn to
+	byte *_priorityScreen; // 480x504 (scaled 3x from 160x168) - screen contains priority information of the game screen
+	// the term "visual screen" is effectively the display screen, but at 480x600 resolution. Used for coordinate translation
+	byte *_displayScreen;  // 960x600 or 640x400 - screen, that the game is rendered to and which is then copied to framebuffer
 
 	uint16 _displayScreenWidth;
 	uint16 _displayScreenHeight;
