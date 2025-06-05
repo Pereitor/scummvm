@@ -636,9 +636,9 @@ bool GfxMgr::render_Clip(int16 &x, int16 &y, int16 &width, int16 &height, const 
 }
 
 void GfxMgr::render_BlockEGA(int16 x, int16 y, int16 width, int16 height) {
-	uint32 offsetVisual = SCRIPT_WIDTH * y + x;
+	uint32 offsetVisual = SCRIPT_WIDTH * y + x; // SCRIPT_WIDTH * (y * AGI_SCALE_FACTOR) + (x * AGI_SCALE_FACTOR);
 	uint32 offsetDisplay = getDisplayOffsetToGameScreenPos(x, y);
-	int16 remainingHeight = height;
+	int16 remainingHeight = height; //  * AGI_SCALE_FACTOR <-- es penja
 	byte curColor = 0;
 	int16 displayWidth = width; // * (AGI_SCALE_FACTOR + _displayWidthMulAdjust);
 
@@ -873,7 +873,7 @@ void GfxMgr::transition_Amiga() {
 			case DISPLAY_UPSCALED_DISABLED:
 				for (int16 multiPixel = 0; multiPixel < 4; multiPixel++) {
 					screenStepPos = (posY * _displayScreenWidth) + posX;
-					_vm->_system->copyRectToScreen(_displayScreen + screenStepPos, _displayScreenWidth, posX, posY, 2, 1);
+					_vm->_system->copyRectToScreen(_displayScreen + screenStepPos, _displayScreenWidth, posX, posY, 1, 1);
 					posY += 42;
 				}
 				break;
@@ -1398,10 +1398,10 @@ int16 GfxMgr::priorityToY(int16 priority) const {
 	uint16 agiVersion = _vm->getVersion();
 
 	if (agiVersion <= 0x3086) {
-		return SCRIPT_HEIGHT / 3; // Buggy behavior, see above
+		return SCRIPT_HEIGHT; // / 3; // Buggy behavior, see above
 	}
 
-	int16 currentY = (SCRIPT_HEIGHT / 3) - 1; // 167;
+	int16 currentY = (SCRIPT_HEIGHT) - 1; // 167; // /3
 	while (_priorityTable[currentY] >= priority) {
 		currentY--;
 		if (currentY < 0) // Original AGI didn't do this, we abort in that case and return -1

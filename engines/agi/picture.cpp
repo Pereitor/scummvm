@@ -181,11 +181,17 @@ void PictureMgr::xCorner(bool skipOtherCoords) {
 	if (!getNextCoordinates(x1, y1))
 		return;
 
+	x1 = x1 * AGI_SCALE_FACTOR;
+	y1 = y1 * AGI_SCALE_FACTOR;
+
 	putVirtPixel(x1, y1);
 
 	for (;;) {
 		if (!getNextXCoordinate(x2))
 			break;
+
+		x2 = x2 * AGI_SCALE_FACTOR;
+		y2 = y2 * AGI_SCALE_FACTOR;
 
 		if (skipOtherCoords)
 			if (!getNextParamByte(dummy))
@@ -295,14 +301,14 @@ void PictureMgr::plotPattern(byte x, byte y) {
 	// setup the X position
 	// = pen_x - pen.size/2
 
-	pen_x = (pen_x * 2) - pen_size;
+	pen_x = (pen_x) - pen_size;
 	if (pen_x < 0) pen_x = 0;
 
-	temp16 = (_width * 2) - (2 * pen_size);
+	temp16 = (_width) - (pen_size);
 	if (pen_x >= temp16)
 		pen_x = temp16;
 
-	pen_x /= 2;
+	pen_x;
 	pen_final_x = pen_x;    // original starting point?? -> used in plotrelated
 
 	// Setup the Y Position
@@ -310,7 +316,7 @@ void PictureMgr::plotPattern(byte x, byte y) {
 	pen_y = pen_y - pen_size;
 	if (pen_y < 0) pen_y = 0;
 
-	temp16 = 167 - (2 * pen_size);
+	temp16 = SCRIPT_HEIGHT - 1 - (pen_size);
 	if (pen_y >= temp16)
 		pen_y = temp16;
 
@@ -599,13 +605,13 @@ void PictureMgr::draw_Line(int16 x1, int16 y1, int16 x2, int16 y2) {
 	if (deltaY > deltaX) {
 		i = deltaY;
 		detdelta = deltaY;
-		errorX = deltaY / 2;
+		errorX = deltaY / 2; // @todo
 		errorY = 0;
 	} else {
 		i = deltaX;
 		detdelta = deltaX;
 		errorX = 0;
-		errorY = deltaX / 2;
+		errorY = deltaX / 2; // @todo
 	}
 
 	int x = x1;
