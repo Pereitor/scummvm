@@ -26,12 +26,12 @@
 
 namespace Agi {
 
-#define SCRIPT_WIDTH    480 // 160
-#define SCRIPT_HEIGHT   504	// 168
-#define VISUAL_WIDTH    480	// 160
-#define VISUAL_HEIGHT   600	// 200
-#define DISPLAY_DEFAULT_WIDTH   960	// 320
-#define DISPLAY_DEFAULT_HEIGHT  600	// 200
+#define SCRIPT_WIDTH    160
+#define SCRIPT_HEIGHT   168
+#define VISUAL_WIDTH    160
+#define VISUAL_HEIGHT   200
+#define DISPLAY_DEFAULT_WIDTH   320
+#define DISPLAY_DEFAULT_HEIGHT  200
 
 enum GfxScreenUpscaledMode {
 	DISPLAY_UPSCALED_DISABLED = 0,

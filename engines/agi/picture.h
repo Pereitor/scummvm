@@ -24,8 +24,8 @@
 
 namespace Agi {
 
-#define _DEFAULT_WIDTH      480 //960 // 960 // 160
-#define _DEFAULT_HEIGHT     504 // 168
+#define _DEFAULT_WIDTH      160
+#define _DEFAULT_HEIGHT     168
 
 /**
  * AGI picture resource.
@@ -46,10 +46,7 @@ class AgiBase;
 class GfxMgr;
 
 class PictureMgr {
-
 public:
-	static const int16 SCALE_FACTOR = 3; // la resolució que li he posat ara és 3 vegades l'original, així que... // 6x scaling for script resolution (160->960, 168->1008)
-
 	PictureMgr(AgiBase *agi, GfxMgr *gfx);
 	virtual ~PictureMgr() { }
 
