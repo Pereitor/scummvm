@@ -56,8 +56,8 @@ GfxMgr::GfxMgr(AgiBase *vm, GfxFont *font) : _vm(vm), _font(font) {
 	_upscaledHires = DISPLAY_UPSCALED_DISABLED;
 	_displayScreenWidth = DISPLAY_DEFAULT_WIDTH;
 	_displayScreenHeight = DISPLAY_DEFAULT_HEIGHT;
-	_displayFontWidth = 8;
-	_displayFontHeight = 8;
+	_displayFontWidth = 24; //8;
+	_displayFontHeight = 24; //8;
 
 	_displayWidthMulAdjust = 0; // visualPos * (2+0) = displayPos
 	_displayHeightMulAdjust = 0; // visualPos * (1+0) = displayPos
@@ -652,11 +652,6 @@ void GfxMgr::render_BlockEGA(int16 x, int16 y, int16 width, int16 height) {
 					
 					_displayScreen[offsetDisplay++] = curColor;
 					//_displayScreen[offsetDisplay++] = curColor;
-					/*
-					memset(&_displayScreen[offsetDisplay], curColor, 1);
-					memset(&_displayScreen[offsetDisplay + _displayScreenWidth], curColor, 1);
-					offsetDisplay += 1;
-					*/
 					remainingWidth--;
 				}
 				break;
@@ -1536,6 +1531,7 @@ void GfxMgr::initMouseCursor(MouseCursorData *mouseCursor, const byte *bitmapDat
 
 	switch (_upscaledHires) {
 	case DISPLAY_UPSCALED_DISABLED:
+		mouseCursor->bitmapDataAllocated = (byte *)malloc(width * height);
 		mouseCursor->bitmapData = bitmapData;
 		break;
 	case DISPLAY_UPSCALED_640x400: {
@@ -1548,7 +1544,14 @@ void GfxMgr::initMouseCursor(MouseCursorData *mouseCursor, const byte *bitmapDat
 		for (uint16 y = 0; y < height; y++) {
 			for (uint16 x = 0; x < width; x++) {
 				byte curColor = *bitmapData++;
-				upscaledData[x * 2 + 0] = curColor;
+				//upscaledData[x * 2 + 0] = curColor;
+                // Ensure 'upscaledData' is not null before dereferencing it
+                if (upscaledData != nullptr) {
+                    upscaledData[x * 2 + 0] = curColor;
+                } else {
+                    // Handle the null pointer case, e.g., log an error or initialize the pointer
+                    error("upscaledData is null. Cannot dereference.");
+                }
 				upscaledData[x * 2 + 1] = curColor;
 				upscaledData[x * 2 + (width * 2) + 0] = curColor;
 				upscaledData[x * 2 + (width * 2) + 1] = curColor;

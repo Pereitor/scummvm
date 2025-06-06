@@ -60,11 +60,11 @@ struct MessageState_Struct {
 };
 
 // this defines here are for calculating character-size inside the visual-screen!
-#define FONT_VISUAL_WIDTH           4
-#define FONT_VISUAL_HEIGHT          8
+#define FONT_VISUAL_WIDTH           24 //8 // 24?
+#define FONT_VISUAL_HEIGHT          24 //8 // 24?
 
-#define FONT_DISPLAY_WIDTH          8
-#define FONT_DISPLAY_HEIGHT         8
+#define FONT_DISPLAY_WIDTH          8 //24 //8
+#define FONT_DISPLAY_HEIGHT         8 //24 //8
 #define FONT_ROW_CHARACTERS         25
 #define FONT_COLUMN_CHARACTERS      40
 #define FONT_BYTES_PER_CHARACTER    8
