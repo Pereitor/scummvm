@@ -181,17 +181,19 @@ void PictureMgr::xCorner(bool skipOtherCoords) {
 	if (!getNextCoordinates(x1, y1))
 		return;
 
-	x1 = x1 * AGI_SCALE_FACTOR;
-	y1 = y1 * AGI_SCALE_FACTOR;
+	// segurament no té sentit perquè ja es fa dins de draw_Line
+	//x1 = x1 * AGI_SCALE_FACTOR;
+	//y1 = y1 * AGI_SCALE_FACTOR;
+	byte vx1 = x1 * AGI_SCALE_FACTOR;
+	byte vy1 = y1 * AGI_SCALE_FACTOR;
 
-	putVirtPixel(x1, y1);
+	putVirtPixel(vx1, vy1);
 
 	for (;;) {
 		if (!getNextXCoordinate(x2))
 			break;
 
-		x2 = x2 * AGI_SCALE_FACTOR;
-		y2 = y2 * AGI_SCALE_FACTOR;
+		//x2 = x2 * AGI_SCALE_FACTOR;		
 
 		if (skipOtherCoords)
 			if (!getNextParamByte(dummy))
@@ -206,6 +208,9 @@ void PictureMgr::xCorner(bool skipOtherCoords) {
 
 		if (!getNextYCoordinate(y2))
 			break;
+
+		// segurament no té sentit perquè ja es fa dins de draw_Line
+		//y2 = y2 * AGI_SCALE_FACTOR;
 
 		draw_Line(x1, y1, x1, y2);
 		y1 = y2;
@@ -223,12 +228,20 @@ void PictureMgr::xCorner(bool skipOtherCoords) {
  * Troll includes both the x and y coordinate of each point.
  */
 void PictureMgr::yCorner(bool skipOtherCoords) {
-	byte x1, x2, y1, y2, dummy;
+	byte x1, x2, y1, y2, dummy;		
 
 	if (!getNextCoordinates(x1, y1))
 		return;
 
-	putVirtPixel(x1, y1);
+	// segurament no té sentit perquè ja es fa dins de draw_Line
+	/*
+	x1 = x1 * AGI_SCALE_FACTOR;
+	y1 = y1 * AGI_SCALE_FACTOR;
+	*/
+	byte vx1 = x1 * AGI_SCALE_FACTOR;
+	byte vy1 = y1 * AGI_SCALE_FACTOR;
+
+	putVirtPixel(vx1, vy1);
 
 	for (;;) {
 		if (skipOtherCoords)
@@ -238,10 +251,16 @@ void PictureMgr::yCorner(bool skipOtherCoords) {
 		if (!getNextYCoordinate(y2))
 			break;
 
+		// segurament no té sentit perquè ja es fa dins de draw_Line
+		//y2 = y2 * AGI_SCALE_FACTOR;
+
 		draw_Line(x1, y1, x1, y2);
 		y1 = y2;
 		if (!getNextXCoordinate(x2))
 			break;
+
+		// segurament no té sentit perquè ja es fa dins de draw_Line	
+		//x2 = x2 * AGI_SCALE_FACTOR;
 
 		if (skipOtherCoords)
 			if (!getNextParamByte(dummy))

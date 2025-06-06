@@ -228,8 +228,8 @@ void SpritesMgr::drawCel(ScreenObjEntry *screenObj) {
 	int16 curY = screenObj->yPos;
 	AgiViewCel *celPtr = screenObj->celData;
 	byte *celDataPtr = celPtr->rawBitmap;
-	uint8 remainingCelHeight = celPtr->height;
-	uint8 celWidth = celPtr->width;
+	uint8 remainingCelHeight = celPtr->height; // * AGI_SCALE_FACTOR;
+	uint8 celWidth = celPtr->width; // * AGI_SCALE_FACTOR;
 	byte celClearKey = celPtr->clearKey;
 	byte viewPriority = screenObj->priority;
 	byte screenPriority = 0;
@@ -248,11 +248,19 @@ void SpritesMgr::drawCel(ScreenObjEntry *screenObj) {
 				if (screenPriority <= 2) {
 					// control data found
 					if (_gfx->checkControlPixel(curX, curY, viewPriority)) {
-						_gfx->putPixel(curX, curY, GFX_SCREEN_MASK_VISUAL, curColor, 0);
+						for (int i = 0; i < AGI_SCALE_FACTOR; i++) {
+							//for (int j = 0; j < AGI_SCALE_FACTOR; i++) {
+								_gfx->putPixel(curX+i, curY, GFX_SCREEN_MASK_VISUAL, curColor, 0);
+							//}
+						}
 						isViewHidden = false;
 					}
 				} else if (screenPriority <= viewPriority) {
-					_gfx->putPixel(curX, curY, GFX_SCREEN_MASK_ALL, curColor, viewPriority);
+					for (int i=0;i<AGI_SCALE_FACTOR;i++) {
+						//for (int j = 0; j < AGI_SCALE_FACTOR; i++) {
+							_gfx->putPixel(curX+i, curY, GFX_SCREEN_MASK_ALL, curColor, viewPriority);
+						//}
+					}					
 					isViewHidden = false;
 				}
 
