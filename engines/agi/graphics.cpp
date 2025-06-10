@@ -327,7 +327,7 @@ void GfxMgr::copyDisplayRectToScreen(int16 x, int16 y, int16 width, int16 height
 void GfxMgr::copyDisplayRectToScreen(int16 x, int16 adjX, int16 y, int16 adjY, int16 width, int16 adjWidth, int16 height, int16 adjHeight) {	
 	switch (_upscaledHires) {
 	case DISPLAY_UPSCALED_DISABLED:
-		// no sembla afectar		
+		// no sembla afectar massa...
 		adjX *= AGI_SCALE_FACTOR;
 		adjY *= AGI_SCALE_FACTOR;
 		adjWidth *= AGI_SCALE_FACTOR;
@@ -436,6 +436,17 @@ void GfxMgr::putPixel(int16 x, int16 y, byte drawMask, byte color, byte priority
 	}
 }
 
+void GfxMgr::putPixelVect(int16 x, int16 y, byte drawMask, byte color, byte priority) {
+	int offset = y * SCRIPT_WIDTH + x;
+
+	if (drawMask & GFX_SCREEN_MASK_VISUAL) {
+		_gameScreen[offset] = color;
+	}
+	if (drawMask & GFX_SCREEN_MASK_PRIORITY) {
+		_priorityScreen[offset] = priority;
+	}
+}
+
 /**
  * Puts a pixel on the display screen.
  * If upscaling is enabled then the pixel and coordinates are upscaled.
@@ -445,9 +456,16 @@ void GfxMgr::putPixelOnDisplay(int16 x, int16 y, byte color) {
 
 	switch (_upscaledHires) {
 	case DISPLAY_UPSCALED_DISABLED:
-		offset = y * _displayScreenWidth + x;
+		offset = (y * _displayScreenWidth) + x;
 
-		_displayScreen[offset] = color;
+		//_displayScreen[offset] = color;
+		// tot el que ve tot seguit no sembla afectar per a res
+		_displayScreen[offset + 0] = color;
+		_displayScreen[offset + 1] = color;
+		_displayScreen[offset + 2] = color;
+		_displayScreen[offset + _displayScreenWidth + 0] = color;
+		_displayScreen[offset + _displayScreenWidth + 1] = color;
+		_displayScreen[offset + _displayScreenWidth + 2] = color;
 		break;
 	case DISPLAY_UPSCALED_640x400:
 		offset = (y * _displayScreenWidth) + x;
@@ -651,7 +669,6 @@ void GfxMgr::render_BlockEGA(int16 x, int16 y, int16 width, int16 height) {
 					curColor = _activeScreen[offsetVisual++];
 					
 					_displayScreen[offsetDisplay++] = curColor;
-					//_displayScreen[offsetDisplay++] = curColor;
 					remainingWidth--;
 				}
 				break;
@@ -673,6 +690,9 @@ void GfxMgr::render_BlockEGA(int16 x, int16 y, int16 width, int16 height) {
 		offsetDisplay += _displayScreenWidth - displayWidth;
 
 		switch (_upscaledHires) {
+			case DISPLAY_UPSCALED_DISABLED:
+				//offsetDisplay += _displayScreenWidth;
+				break;
 			case DISPLAY_UPSCALED_640x400:
 				offsetDisplay += _displayScreenWidth;
 				break;
@@ -869,7 +889,7 @@ void GfxMgr::transition_Amiga() {
 				for (int16 multiPixel = 0; multiPixel < 4; multiPixel++) {
 					screenStepPos = (posY * _displayScreenWidth) + posX;
 					_vm->_system->copyRectToScreen(_displayScreen + screenStepPos, _displayScreenWidth, posX, posY, 1, 1);
-					posY += 42;
+					posY += 42 * 3;
 				}
 				break;
 			case DISPLAY_UPSCALED_640x400:
@@ -982,8 +1002,8 @@ void GfxMgr::block_save(int16 x, int16 y, int16 width, int16 height, byte *buffe
 
 	//warning("block_save: %d, %d -> %d, %d", x, y, width, height);
 
-	while (remainingHeight) {
-		memcpy(curBufferPtr, _gameScreen + offset, width);
+	while (remainingHeight) { // * AGI_SCALE_FACTOR
+		memcpy(curBufferPtr, _gameScreen + offset, width); //  * AGI_SCALE_FACTOR * 2
 		offset += SCRIPT_WIDTH;
 		curBufferPtr += width;
 		remainingHeight--;
@@ -991,8 +1011,8 @@ void GfxMgr::block_save(int16 x, int16 y, int16 width, int16 height, byte *buffe
 
 	remainingHeight = height;
 	offset = startOffset;
-	while (remainingHeight) {
-		memcpy(curBufferPtr, _priorityScreen + offset, width);
+	while (remainingHeight) { // * AGI_SCALE_FACTOR
+		memcpy(curBufferPtr, _priorityScreen + offset, width); //  * AGI_SCALE_FACTOR * 2
 		offset += SCRIPT_WIDTH;
 		curBufferPtr += width;
 		remainingHeight--;
@@ -1011,8 +1031,8 @@ void GfxMgr::block_restore(int16 x, int16 y, int16 width, int16 height, byte *bu
 
 	//warning("block_restore: %d, %d -> %d, %d", x, y, width, height);
 
-	while (remainingHeight) {
-		memcpy(_gameScreen + offset, curBufferPtr, width);
+	while (remainingHeight) { // * AGI_SCALE_FACTOR
+		memcpy(_gameScreen + offset, curBufferPtr, width);  // * AGI_SCALE_FACTOR * 2
 		offset += SCRIPT_WIDTH;
 		curBufferPtr += width;
 		remainingHeight--;
@@ -1020,8 +1040,8 @@ void GfxMgr::block_restore(int16 x, int16 y, int16 width, int16 height, byte *bu
 
 	remainingHeight = height;
 	offset = startOffset;
-	while (remainingHeight) {
-		memcpy(_priorityScreen + offset, curBufferPtr, width);
+	while (remainingHeight) { // * AGI_SCALE_FACTOR
+		memcpy(_priorityScreen + offset, curBufferPtr, width); // * AGI_SCALE_FACTOR * 2
 		offset += SCRIPT_WIDTH;
 		curBufferPtr += width;
 		remainingHeight--;

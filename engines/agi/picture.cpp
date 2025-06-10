@@ -81,7 +81,7 @@ void PictureMgr::putVirtPixel(int16 x, int16 y) {
 	if (_scrOn)
 		drawMask |= GFX_SCREEN_MASK_VISUAL;
 
-	_gfx->putPixel(x, y, drawMask, _scrColor, _priColor);
+	_gfx->putPixelVect(x, y, drawMask, _scrColor, _priColor);
 }
 
 /**
@@ -808,8 +808,8 @@ void PictureMgr::decodePicture(int16 resourceNr, bool clearScreen, bool agi256, 
 	_resourceNr = resourceNr;
 	_data = _vm->_game.pictures[resourceNr].rdata;
 	_dataSize = _vm->_game.dirPic[resourceNr].len;
-	_width = width * AGI_SCALE_FACTOR; // sembla que millora alguna cosa...
-	_height = height * AGI_SCALE_FACTOR; // ...en les pantalles inicials
+	_width = width; // * AGI_SCALE_FACTOR; // sembla que millora alguna cosa...
+	_height = height; // * AGI_SCALE_FACTOR; // ...en les pantalles inicials
 
 	if (clearScreen) {
 		_gfx->clear(15, getInitialPriorityColor()); // white, priority 4 or 1
