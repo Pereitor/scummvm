@@ -174,6 +174,7 @@ public:
 	void clear(byte color, byte priority);
 	void clearDisplay(byte color, bool copyToScreen = true);
 	void putPixel(int16 x, int16 y, byte drawMask, byte color, byte priority);
+	void putPixelVect(int16 x, int16 y, byte drawMask, byte color, byte priority);
 	void putPixelOnDisplay(int16 x, int16 y, byte color);
 	void putPixelOnDisplay(int16 x, int16 adjX, int16 y, int16 adjY, byte color);
 	void putFontPixelOnDisplay(int16 baseX, int16 baseY, int16 addX, int16 addY, byte color, bool isHires);

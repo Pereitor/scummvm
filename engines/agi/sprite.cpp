@@ -128,7 +128,7 @@ void SpritesMgr::buildSpriteListAdd(uint16 givenOrderNr, ScreenObjEntry *screenO
 	}
 
 //	warning("list-add: %d, %d, original yPos: %d, ySize: %d", spriteEntry.xPos, spriteEntry.yPos, screenObj->yPos, screenObj->ySize);
-	spriteEntry.backgroundBuffer = (uint8 *)malloc(spriteEntry.xSize * spriteEntry.ySize * 2); // for visual + priority data
+	spriteEntry.backgroundBuffer = (uint8 *)malloc(spriteEntry.xSize * spriteEntry.ySize * AGI_SCALE_FACTOR * 2); // for visual + priority data
 	assert(spriteEntry.backgroundBuffer);
 	spriteList.push_back(spriteEntry);
 }
@@ -194,7 +194,7 @@ void SpritesMgr::eraseSprites() {
  */
 void SpritesMgr::drawSprites(SpriteList &spriteList) {
 	for (auto &sprite : spriteList) {
-		_gfx->block_save(sprite.xPos, sprite.yPos, sprite.xSize, sprite.ySize, sprite.backgroundBuffer);
+		_gfx->block_save(sprite.xPos * AGI_SCALE_FACTOR * 2, sprite.yPos * AGI_SCALE_FACTOR, sprite.xSize * AGI_SCALE_FACTOR, sprite.ySize * AGI_SCALE_FACTOR, sprite.backgroundBuffer);
 		drawCel(sprite.screenObjPtr);
 	}
 }
@@ -223,13 +223,13 @@ void SpritesMgr::drawAllSpriteLists() {
 }
 
 void SpritesMgr::drawCel(ScreenObjEntry *screenObj) {
-	int16 curX = screenObj->xPos;
-	int16 baseX = screenObj->xPos;
-	int16 curY = screenObj->yPos;
+	int16 curX = (screenObj->xPos) * AGI_SCALE_FACTOR * 2;
+	int16 baseX = (screenObj->xPos) * AGI_SCALE_FACTOR * 2;
+	int16 curY = (screenObj->yPos) * AGI_SCALE_FACTOR;
 	AgiViewCel *celPtr = screenObj->celData;
 	byte *celDataPtr = celPtr->rawBitmap;
-	uint8 remainingCelHeight = celPtr->height; // * AGI_SCALE_FACTOR;
-	uint8 celWidth = celPtr->width; // * AGI_SCALE_FACTOR;
+	uint8 remainingCelHeight = (celPtr->height); // * AGI_SCALE_FACTOR;
+	uint8 celWidth = (celPtr->width); // * AGI_SCALE_FACTOR * 2;
 	byte celClearKey = celPtr->clearKey;
 	byte viewPriority = screenObj->priority;
 	byte screenPriority = 0;
@@ -239,27 +239,27 @@ void SpritesMgr::drawCel(ScreenObjEntry *screenObj) {
 	// Adjust vertical position, given yPos is lower left, but we need upper left
 	curY = curY - celPtr->height + 1;
 
-	while (remainingCelHeight) {
-		for (int16 loopX = 0; loopX < celWidth; loopX++) {
+	while (remainingCelHeight) { // * AGI_SCALE_FACTOR
+		for (int16 loopX = 0; loopX < (celWidth); loopX++) { //  * AGI_SCALE_FACTOR
 			curColor = *celDataPtr++;
 
 			if (curColor != celClearKey) {
-				screenPriority = _gfx->getPriority(curX, curY);
+				screenPriority = _gfx->getPriority(curX / (AGI_SCALE_FACTOR * 2), curY/AGI_SCALE_FACTOR);
 				if (screenPriority <= 2) {
 					// control data found
-					if (_gfx->checkControlPixel(curX, curY, viewPriority)) {
-						for (int i = 0; i < AGI_SCALE_FACTOR; i++) {
-							//for (int j = 0; j < AGI_SCALE_FACTOR; i++) {
-								_gfx->putPixel(curX+i, curY, GFX_SCREEN_MASK_VISUAL, curColor, 0);
-							//}
+					if (_gfx->checkControlPixel(curX / (AGI_SCALE_FACTOR * 2), curY/AGI_SCALE_FACTOR, viewPriority)) {
+						for (int i = 0; i < AGI_SCALE_FACTOR*2; i++) { // el *2 no sé si afecta o què
+							for (int j = 0; j < AGI_SCALE_FACTOR; j++) {
+								_gfx->putPixel(curX+i, curY-j, GFX_SCREEN_MASK_VISUAL, curColor, 0);
+							}
 						}
 						isViewHidden = false;
 					}
 				} else if (screenPriority <= viewPriority) {
-					for (int i=0;i<AGI_SCALE_FACTOR;i++) {
-						//for (int j = 0; j < AGI_SCALE_FACTOR; i++) {
-							_gfx->putPixel(curX+i, curY, GFX_SCREEN_MASK_ALL, curColor, viewPriority);
-						//}
+					for (int i=0;i<AGI_SCALE_FACTOR*2;i++) {
+						for (int j = 0; j < AGI_SCALE_FACTOR; j++) {
+							_gfx->putPixel(curX+i, curY-j, GFX_SCREEN_MASK_ALL, curColor, viewPriority);
+						}
 					}					
 					isViewHidden = false;
 				}
@@ -344,8 +344,8 @@ void SpritesMgr::showSprite(ScreenObjEntry *screenObj) {
 		width = width2 + x2 - x;
 	}
 
-	if ((x + width) > 161) {
-		width = 161 - x;
+	if ((x + width) > SCRIPT_WIDTH + 1) {
+		width = SCRIPT_WIDTH + 1 - x;
 	}
 
 	if (1 < (height - y)) {
