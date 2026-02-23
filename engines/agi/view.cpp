@@ -615,9 +615,9 @@ void AgiEngine::setCel(ScreenObjEntry *screenObj, int16 celNr) {
  * @param v pointer to view table entry
  */
 void AgiEngine::clipViewCoordinates(ScreenObjEntry *screenObj) {
-	if (screenObj->xPos + screenObj->xSize > SCRIPT_WIDTH) {
+	if (screenObj->xPos + screenObj->xSize > AGI_SCRIPT_WIDTH) {
 		screenObj->flags |= fUpdatePos;
-		screenObj->xPos = SCRIPT_WIDTH - screenObj->xSize;
+		screenObj->xPos = AGI_SCRIPT_WIDTH - screenObj->xSize;
 	}
 	if (screenObj->yPos - screenObj->ySize + 1 < 0) {
 		screenObj->flags |= fUpdatePos;

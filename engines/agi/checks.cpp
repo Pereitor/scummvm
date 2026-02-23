@@ -31,13 +31,13 @@ bool AgiEngine::checkPosition(ScreenObjEntry *screenObj) {
 	if (screenObj->xPos < 0) {
 		result = false;
 	} else {
-		if (screenObj->xPos + screenObj->xSize > SCRIPT_WIDTH) {
+		if (screenObj->xPos + screenObj->xSize > SCRIPT_WIDTH / (AGI_SCALE_FACTOR * 2)) {
 			result = false;
 		} else {
 			if (screenObj->yPos - screenObj->ySize < -1) {
 				result = false;
 			} else {
-				if (screenObj->yPos >= SCRIPT_HEIGHT) {
+				if (screenObj->yPos >= SCRIPT_HEIGHT / AGI_SCALE_FACTOR) {
 					result = false;
 				} else {
 					if (((!(screenObj->flags & fIgnoreHorizon)) && screenObj->yPos <= _game.horizon)) {
@@ -120,7 +120,7 @@ bool AgiEngine::checkPriority(ScreenObjEntry *screenObj) {
 		int16 curY = screenObj->yPos;
 
 		for (int16 celX = 0; celX < screenObj->xSize; celX++, curX++) {
-			byte screenPriority = _gfx->getPriority(curX, curY);
+			byte screenPriority = _gfx->getPriority(curX * AGI_SCALE_FACTOR * 2, curY * AGI_SCALE_FACTOR);
 
 			if (screenPriority == 0) {  // unconditional black. no go at all!
 				touchedControl = false;
@@ -243,8 +243,8 @@ void AgiEngine::updatePosition() {
 //			border = 4;
 
 		if (!border) {
-			if (x + screenObj->xSize > SCRIPT_WIDTH) {
-				x = SCRIPT_WIDTH - screenObj->xSize;
+			if (x + screenObj->xSize > SCRIPT_WIDTH / (AGI_SCALE_FACTOR * 2)) {
+				x = SCRIPT_WIDTH / (AGI_SCALE_FACTOR * 2) - screenObj->xSize;
 				border = 2;
 			}
 		}
@@ -253,8 +253,8 @@ void AgiEngine::updatePosition() {
 		if (y - screenObj->ySize < -1) {
 			y = screenObj->ySize - 1;
 			border = 1;
-		} else if (y > SCRIPT_HEIGHT - 1) {
-			y = SCRIPT_HEIGHT - 1;
+		} else if (y > SCRIPT_HEIGHT / AGI_SCALE_FACTOR - 1) {
+			y = SCRIPT_HEIGHT / AGI_SCALE_FACTOR - 1;
 			border = 3;
 		} else if ((!(screenObj->flags & fIgnoreHorizon)) && y <= _game.horizon) {
 			debugC(4, kDebugLevelSprites, "y = %d, horizon = %d", y, _game.horizon);
@@ -463,11 +463,11 @@ int16 AgiEngine::nearWater(ScreenObjEntry &screenObj, byte direction, int16 x, i
 	}
 
 	for (int16 i = 0; i <= limit; i++) {
-		if (!(0 <= x && x < SCRIPT_WIDTH && 0 <= y && y < SCRIPT_HEIGHT)) {
+		if (!(0 <= x && x < SCRIPT_WIDTH / (AGI_SCALE_FACTOR * 2) && 0 <= y && y < SCRIPT_HEIGHT / AGI_SCALE_FACTOR)) {
 			break;
 		}
 
-		byte priority = _gfx->getPriority(x, y);
+		byte priority = _gfx->getPriority(x * AGI_SCALE_FACTOR * 2, y * AGI_SCALE_FACTOR);
 		x += dx;
 		y += dy;
 

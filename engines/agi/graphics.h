@@ -43,6 +43,10 @@ namespace Agi {
 // Scaling factor
 #define AGI_SCALE_FACTOR 3
 
+// Original AGI dimensions (for game logic that works in AGI coords)
+#define AGI_SCRIPT_WIDTH    (SCRIPT_WIDTH / (AGI_SCALE_FACTOR * 2))
+#define AGI_SCRIPT_HEIGHT   (SCRIPT_HEIGHT / AGI_SCALE_FACTOR)
+
 enum GfxScreenUpscaledMode {	
 	DISPLAY_UPSCALED_DISABLED = 0,
 	DISPLAY_UPSCALED_640x400  = 1
@@ -146,7 +150,7 @@ private:
 	GfxScreenUpscaledMode _upscaledHires;
 
 	bool  _priorityTableSet;
-	uint8 _priorityTable[SCRIPT_HEIGHT]; /**< priority table */
+	uint8 _priorityTable[AGI_SCRIPT_HEIGHT]; /**< priority table */
 
 	MouseCursorData _mouseCursor;
 	MouseCursorData _mouseCursorBusy;

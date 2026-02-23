@@ -183,7 +183,7 @@ int AgiEngine::saveGame(const Common::String &fileName, const Common::String &de
 		out->writeSint16BE(0);
 	}
 
-	for (i = 0; i < SCRIPT_HEIGHT; i++)
+	for (i = 0; i < AGI_SCRIPT_HEIGHT; i++)
 		out->writeByte(_gfx->saveLoadGetPriority(i));
 
 	// Version 10+: Save, if priority table got modified (set.pri.base opcode)
@@ -511,7 +511,7 @@ int AgiEngine::loadGame(const Common::String &fileName, bool checkId) {
 		_text->promptDisable();
 	}
 
-	for (i = 0; i < SCRIPT_HEIGHT; i++)
+	for (i = 0; i < AGI_SCRIPT_HEIGHT; i++)
 		_gfx->saveLoadSetPriority(i, in->readByte());
 
 	if (saveVersion >= 10) {

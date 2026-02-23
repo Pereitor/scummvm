@@ -274,8 +274,9 @@ void GfxMgr::translateDisplayPosToGameScreen(int16 &x, int16 &y) const {
 	y = y / (1 + _displayHeightMulAdjust);
 	if (y < 0)
 		y = 0;
-	if (y >= SCRIPT_HEIGHT)
-		y = SCRIPT_HEIGHT + 1; // 1 beyond
+	if (y >= AGI_SCRIPT_HEIGHT) {
+		y = AGI_SCRIPT_HEIGHT + 1; // 1 beyond
+	}
 }
 
 // Translates dimension from visual screen to display screen
@@ -328,10 +329,12 @@ void GfxMgr::copyDisplayRectToScreen(int16 x, int16 adjX, int16 y, int16 adjY, i
 	switch (_upscaledHires) {
 	case DISPLAY_UPSCALED_DISABLED:
 		// no sembla afectar massa...
+		/*
 		adjX *= AGI_SCALE_FACTOR;
 		adjY *= AGI_SCALE_FACTOR;
 		adjWidth *= AGI_SCALE_FACTOR;
 		adjHeight *= AGI_SCALE_FACTOR;
+		*/
 		break;		
 	case DISPLAY_UPSCALED_640x400:
 		adjX *= 2; adjY *= 2;
@@ -461,11 +464,13 @@ void GfxMgr::putPixelOnDisplay(int16 x, int16 y, byte color) {
 		//_displayScreen[offset] = color;
 		// tot el que ve tot seguit no sembla afectar per a res
 		_displayScreen[offset + 0] = color;
+		/*
 		_displayScreen[offset + 1] = color;
 		_displayScreen[offset + 2] = color;
 		_displayScreen[offset + _displayScreenWidth + 0] = color;
 		_displayScreen[offset + _displayScreenWidth + 1] = color;
 		_displayScreen[offset + _displayScreenWidth + 2] = color;
+		*/
 		break;
 	case DISPLAY_UPSCALED_640x400:
 		offset = (y * _displayScreenWidth) + x;
@@ -535,7 +540,9 @@ void GfxMgr::putFontPixelOnDisplay(int16 baseX, int16 baseY, int16 addX, int16 a
  */
 byte GfxMgr::getColor(int16 x, int16 y) const {
 	int offset = y * SCRIPT_WIDTH + x;
-
+	// Segurament ací ho hem d'agafar del _gameScreen original, no amb les dimensions escalades!
+	//int offset = (y / AGI_SCALE_FACTOR) * (SCRIPT_WIDTH / AGI_SCALE_FACTOR) + (x / (AGI_SCALE_FACTOR * 2));
+	// NO
 	return _gameScreen[offset];
 }
 
@@ -1140,8 +1147,9 @@ void GfxMgr::drawDisplayRect(int16 x, int16 adjX, int16 y, int16 adjY, int16 wid
 	switch (_upscaledHires) {
 	case DISPLAY_UPSCALED_DISABLED:
 		//x += adjX; y += adjY;
-		x += adjX * 3;
-		y += adjY * 3;
+		x += adjX * 3; // sense açò...
+		y += adjY * 3; // ...no es dibuixa la vora exterior dels requadres de text, i prova
+		// un error d'assertion
 		width += adjWidth; height += adjHeight;
 		break;
 	case DISPLAY_UPSCALED_640x400:
@@ -1343,10 +1351,10 @@ void GfxMgr::createDefaultPriorityTable(uint8 *priorityTable) {
 
 void GfxMgr::setPriorityTable(int16 priorityBase) {
 	_priorityTableSet = true;
-	int16 x = (SCRIPT_HEIGHT - priorityBase) * SCRIPT_HEIGHT / 10;
+	int16 x = (AGI_SCRIPT_HEIGHT - priorityBase) * AGI_SCRIPT_HEIGHT / 10;
 
-	for (int16 priorityY = 0; priorityY < SCRIPT_HEIGHT; priorityY++) {
-		int16 priority = (priorityY - priorityBase) < 0 ? 4 : (priorityY - priorityBase) * SCRIPT_HEIGHT / x + 5;
+	for (int16 priorityY = 0; priorityY < AGI_SCRIPT_HEIGHT; priorityY++) {
+		int16 priority = (priorityY - priorityBase) < 0 ? 4 : (priorityY - priorityBase) * AGI_SCRIPT_HEIGHT / x + 5;
 		if (priority > 15)
 			priority = 15;
 		_priorityTable[priorityY] = priority;
@@ -1355,7 +1363,7 @@ void GfxMgr::setPriorityTable(int16 priorityBase) {
 
 // used for saving
 int16 GfxMgr::saveLoadGetPriority(int16 yPos) const {
-	assert(yPos < SCRIPT_HEIGHT);
+	assert(yPos < AGI_SCRIPT_HEIGHT);
 	return _priorityTable[yPos];
 }
 
@@ -1365,7 +1373,7 @@ bool GfxMgr::saveLoadWasPriorityTableModified() const {
 
 // used for restoring
 void GfxMgr::saveLoadSetPriority(int16 yPos, int16 priority) {
-	assert(yPos < SCRIPT_HEIGHT);
+	assert(yPos < AGI_SCRIPT_HEIGHT);
 	_priorityTable[yPos] = priority;
 }
 
@@ -1374,7 +1382,7 @@ void GfxMgr::saveLoadSetPriorityTableModifiedBool(bool wasModified) {
 }
 
 void GfxMgr::saveLoadFigureOutPriorityTableModifiedBool() {
-	uint8 defaultPriorityTable[SCRIPT_HEIGHT]; /**< priority table */
+	uint8 defaultPriorityTable[AGI_SCRIPT_HEIGHT]; /**< priority table */
 
 	createDefaultPriorityTable(defaultPriorityTable);
 
@@ -1413,10 +1421,10 @@ int16 GfxMgr::priorityToY(int16 priority) const {
 	uint16 agiVersion = _vm->getVersion();
 
 	if (agiVersion <= 0x3086) {
-		return SCRIPT_HEIGHT; // / 3; // Buggy behavior, see above
+		return AGI_SCRIPT_HEIGHT; // Buggy behavior, see above
 	}
 
-	int16 currentY = (SCRIPT_HEIGHT) - 1; // 167; // /3
+	int16 currentY = AGI_SCRIPT_HEIGHT - 1;
 	while (_priorityTable[currentY] >= priority) {
 		currentY--;
 		if (currentY < 0) // Original AGI didn't do this, we abort in that case and return -1
@@ -1426,7 +1434,7 @@ int16 GfxMgr::priorityToY(int16 priority) const {
 }
 
 int16 GfxMgr::priorityFromY(int16 yPos) const {
-	assert(yPos < SCRIPT_HEIGHT);
+	assert(yPos < AGI_SCRIPT_HEIGHT);
 	return _priorityTable[yPos];
 }
 
@@ -1530,25 +1538,6 @@ int GfxMgr::getAGIPalFileNum() const {
 }
 
 void GfxMgr::initMouseCursor(MouseCursorData *mouseCursor, const byte *bitmapData, uint16 width, uint16 height, int hotspotX, int hotspotY) {
-	/*
-		mouseCursor->bitmapDataAllocated = (byte *)malloc(width * height);
-		mouseCursor->bitmapData = mouseCursor->bitmapDataAllocated;
-
-		// Upscale mouse cursor
-		byte *upscaledData = mouseCursor->bitmapDataAllocated;
-
-		for (uint16 y = 0; y < height; y++) {
-			for (uint16 x = 0; x < width; x++) {
-				byte curColor = *bitmapData++;
-				upscaledData[x * 2 + 0] = curColor;
-				upscaledData[x * 2 + 1] = curColor;
-				upscaledData[x * 2 + (width) + 0] = curColor;
-				upscaledData[x * 2 + (width) + 1] = curColor;
-			}
-			upscaledData += width * 3;
-		}
-	*/
-
 	switch (_upscaledHires) {
 	case DISPLAY_UPSCALED_DISABLED:
 		mouseCursor->bitmapDataAllocated = (byte *)malloc(width * height);
@@ -1564,14 +1553,7 @@ void GfxMgr::initMouseCursor(MouseCursorData *mouseCursor, const byte *bitmapDat
 		for (uint16 y = 0; y < height; y++) {
 			for (uint16 x = 0; x < width; x++) {
 				byte curColor = *bitmapData++;
-				//upscaledData[x * 2 + 0] = curColor;
-                // Ensure 'upscaledData' is not null before dereferencing it
-                if (upscaledData != nullptr) {
-                    upscaledData[x * 2 + 0] = curColor;
-                } else {
-                    // Handle the null pointer case, e.g., log an error or initialize the pointer
-                    error("upscaledData is null. Cannot dereference.");
-                }
+				upscaledData[x * 2 + 0] = curColor;
 				upscaledData[x * 2 + 1] = curColor;
 				upscaledData[x * 2 + (width * 2) + 0] = curColor;
 				upscaledData[x * 2 + (width * 2) + 1] = curColor;
@@ -1588,7 +1570,7 @@ void GfxMgr::initMouseCursor(MouseCursorData *mouseCursor, const byte *bitmapDat
 	default:
 		assert(0);
 		break;
-	}	
+	}
 	mouseCursor->width = width;
 	mouseCursor->height = height;
 	mouseCursor->hotspotX = hotspotX;

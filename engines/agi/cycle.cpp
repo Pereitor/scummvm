@@ -88,7 +88,7 @@ void AgiEngine::newRoom(int16 newRoomNr) {
 	// Reposition ego in the new room
 	switch (getVar(VM_VAR_BORDER_TOUCH_EGO)) {
 	case 1:
-		screenObjEgo->yPos = SCRIPT_HEIGHT - 1;
+		screenObjEgo->yPos = AGI_SCRIPT_HEIGHT - 1;
 		break;
 	case 2:
 		screenObjEgo->xPos = 0;
@@ -97,7 +97,7 @@ void AgiEngine::newRoom(int16 newRoomNr) {
 		screenObjEgo->yPos = _game.horizon + 1;
 		break;
 	case 4:
-		screenObjEgo->xPos = SCRIPT_WIDTH - screenObjEgo->xSize;
+		screenObjEgo->xPos = AGI_SCRIPT_WIDTH - screenObjEgo->xSize;
 		break;
 	default:
 		break;

@@ -182,13 +182,13 @@ void PictureMgr::xCorner(bool skipOtherCoords) {
 	if (!getNextCoordinates(x1, y1))
 		return;
 
-	// segurament no té sentit perquè ja es fa dins de draw_Line
-	//x1 = x1 * AGI_SCALE_FACTOR;
-	//y1 = y1 * AGI_SCALE_FACTOR;
-	byte vx1 = x1 * AGI_SCALE_FACTOR;
-	byte vy1 = y1 * AGI_SCALE_FACTOR;
 
-	putVirtPixel(vx1, vy1);
+
+
+
+
+
+
 
 	for (;;) {
 		if (!getNextXCoordinate(x2))
@@ -234,15 +234,15 @@ void PictureMgr::yCorner(bool skipOtherCoords) {
 	if (!getNextCoordinates(x1, y1))
 		return;
 
-	// segurament no té sentit perquè ja es fa dins de draw_Line
-	/*
-	x1 = x1 * AGI_SCALE_FACTOR;
-	y1 = y1 * AGI_SCALE_FACTOR;
-	*/
-	byte vx1 = x1 * AGI_SCALE_FACTOR;
-	byte vy1 = y1 * AGI_SCALE_FACTOR;
 
-	putVirtPixel(vx1, vy1);
+
+
+
+
+
+
+
+
 
 	for (;;) {
 		if (skipOtherCoords)
@@ -312,8 +312,8 @@ void PictureMgr::plotPattern(byte x, byte y) {
 	uint8 temp8;
 	uint16 temp16;
 
-	int pen_x = x * SCALE_FACTOR; // no sembla fer res
-	int pen_y = y * SCALE_FACTOR;
+	int pen_x = x; // * AGI_SCALE_FACTOR; // no sembla fer res
+	int pen_y = y; // * AGI_SCALE_FACTOR;
 	uint16 pen_size = (_patCode & 0x07);
 
 	circle_ptr = &circle_data[circle_list[pen_size]];
@@ -324,7 +324,7 @@ void PictureMgr::plotPattern(byte x, byte y) {
 	pen_x = (pen_x) - pen_size;
 	if (pen_x < 0) pen_x = 0;
 
-	temp16 = (_width) - (pen_size);
+	temp16 = AGI_SCRIPT_WIDTH - (pen_size);
 	if (pen_x >= temp16)
 		pen_x = temp16;
 
@@ -336,7 +336,7 @@ void PictureMgr::plotPattern(byte x, byte y) {
 	pen_y = pen_y - pen_size;
 	if (pen_y < 0) pen_y = 0;
 
-	temp16 = SCRIPT_HEIGHT - 1 - (pen_size);
+	temp16 = AGI_SCRIPT_HEIGHT - 1 - (pen_size);
 	if (pen_y >= temp16)
 		pen_y = temp16;
 
@@ -369,7 +369,7 @@ void PictureMgr::plotPattern(byte x, byte y) {
 
 				// == box plot, != circle plot
 				if ((_patCode & 0x20) == 0 || (t & 0x03) == ditherCond)
-					putVirtPixel(pen_x, pen_y);
+					putVirtPixel(pen_x * AGI_SCALE_FACTOR * 2, pen_y * AGI_SCALE_FACTOR);
 			}
 			pen_x++;
 		}
@@ -572,10 +572,10 @@ void PictureMgr::draw_Line(int16 x1, int16 y1, int16 x2, int16 y2) {
 	y2 = y2 * AGI_SCALE_FACTOR;
 
 	
-	x1 = CLIP<int16>(x1, 0, (_width * AGI_SCALE_FACTOR * 2) - 1);
-	x2 = CLIP<int16>(x2, 0, (_width * AGI_SCALE_FACTOR * 2) - 1);
-	y1 = CLIP<int16>(y1, 0, (_height * AGI_SCALE_FACTOR) - 1);
-	y2 = CLIP<int16>(y2, 0, (_height * AGI_SCALE_FACTOR) - 1);
+	x1 = CLIP<int16>(x1, 0, _width - 1);
+	x2 = CLIP<int16>(x2, 0, _width - 1);
+	y1 = CLIP<int16>(y1, 0, _height - 1);
+	y2 = CLIP<int16>(y2, 0, _height - 1);
 	/*
 	x1 = CLIP<int16>(x1, 0, _width - 1);
 	x2 = CLIP<int16>(x2, 0, _width - 1);
@@ -625,13 +625,13 @@ void PictureMgr::draw_Line(int16 x1, int16 y1, int16 x2, int16 y2) {
 	if (deltaY > deltaX) {
 		i = deltaY;
 		detdelta = deltaY;
-		errorX = deltaY / 2; // @todo
+		errorX = deltaY; // 2; // @todo
 		errorY = 0;
 	} else {
 		i = deltaX;
 		detdelta = deltaX;
 		errorX = 0;
-		errorY = deltaX / 2; // @todo
+		errorY = deltaX; // 2; // @todo
 	}
 
 	int x = x1;
@@ -667,7 +667,7 @@ void PictureMgr::draw_LineShort() {
 	if (!getNextCoordinates(x1, y1))
 		return;
 
-	putVirtPixel(x1, y1);
+	// draw_Line already draws first pixel with scaling
 
 	for (;;) {
 		if (!getNextParamByte(disp))
@@ -701,7 +701,7 @@ void PictureMgr::draw_LineAbsolute() {
 	//x1 = x1 * SCALE_FACTOR;
 	//y1 = y1 * SCALE_FACTOR;
 
-	putVirtPixel(x1, y1);
+	// draw_Line already draws first pixel with scaling
 
 	for (;;) {
 		if (!getNextCoordinates(x2, y2))
