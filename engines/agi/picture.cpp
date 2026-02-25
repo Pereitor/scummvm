@@ -210,7 +210,7 @@ void PictureMgr::xCorner(bool skipOtherCoords) {
 		if (!getNextYCoordinate(y2))
 			break;
 
-		// segurament no té sentit perquè ja es fa dins de draw_Line
+		// segurament no te sentit perque ja es fa dins de draw_Line
 		//y2 = y2 * AGI_SCALE_FACTOR;
 
 		draw_Line(x1, y1, x1, y2);
@@ -234,16 +234,6 @@ void PictureMgr::yCorner(bool skipOtherCoords) {
 	if (!getNextCoordinates(x1, y1))
 		return;
 
-
-
-
-
-
-
-
-
-
-
 	for (;;) {
 		if (skipOtherCoords)
 			if (!getNextParamByte(dummy))
@@ -252,7 +242,7 @@ void PictureMgr::yCorner(bool skipOtherCoords) {
 		if (!getNextYCoordinate(y2))
 			break;
 
-		// segurament no té sentit perquè ja es fa dins de draw_Line
+		// segurament no te sentit perque ja es fa dins de draw_Line
 		//y2 = y2 * AGI_SCALE_FACTOR;
 
 		draw_Line(x1, y1, x1, y2);
@@ -260,7 +250,7 @@ void PictureMgr::yCorner(bool skipOtherCoords) {
 		if (!getNextXCoordinate(x2))
 			break;
 
-		// segurament no té sentit perquè ja es fa dins de draw_Line	
+		// segurament no te sentit perque ja es fa dins de draw_Line	
 		//x2 = x2 * AGI_SCALE_FACTOR;
 
 		if (skipOtherCoords)
