@@ -206,6 +206,7 @@ void GfxMgr::initVideo() {
 	_displayPixels = _displayScreenWidth * _displayScreenHeight;
 	_displayScreen = (byte *)calloc(_displayPixels, 1);
 	_pristineBackgroundScreen = (byte *)calloc(_pixels, 1);
+	_pristinePriorityScreen = (byte *)calloc(_pixels, 1);
 	_hiresBackgroundScreen = (byte *)calloc(_displayPixels, 1);
 
 	initGraphics(_displayScreenWidth, _displayScreenHeight);
@@ -229,6 +230,7 @@ void GfxMgr::deinitVideo() {
 	free(_gameScreen);
 	free(_priorityScreen);
 	free(_pristineBackgroundScreen);
+	free(_pristinePriorityScreen);
 	free(_hiresBackgroundScreen);
 }
 
@@ -404,6 +406,7 @@ void GfxMgr::clear(byte color, byte priority) {
 
 	if (_upscaledHires == DISPLAY_UPSCALED_960x600) {
 		memset(_pristineBackgroundScreen, color, _pixels);
+		memset(_pristinePriorityScreen, priority, _pixels);
 		memset(_hiresBackgroundScreen, color, _displayPixels);
 	}
 }
@@ -689,14 +692,15 @@ void GfxMgr::render_BlockEGA(int16 x, int16 y, int16 width, int16 height) {
 			// High-res composite logic: 
 			// We compare both color modifications and Priority values to verify foreground sprites (like Ego)
 			// _pristineBackgroundScreen contains the original 1x representation
+			// _pristinePriorityScreen holds the native depth
 			// _hiresBackgroundScreen contains the 6x3 vector paths
-			// _priorityScreen defines AGI depth-sorting layer values
 			while (remainingWidth) {
 				curColor = _activeScreen[offsetVisual];
 				
-				// A priority of 4 is the base background priority in AGI.
-				// If the screen priority is <= 4, OR if the color has not been modified by a sprite
-				if (curColor == _pristineBackgroundScreen[offsetVisual] || _priorityScreen[offsetVisual] <= 4) {
+				// If the color AND priority map match the original pristine background,
+				// it has NOT been modified by any sprites! (Ego going behind high-priority vectors
+				// remains valid because the sprite isn't drawn to the 1x buffer originally)
+				if (curColor == _pristineBackgroundScreen[offsetVisual] && _priorityScreen[offsetVisual] == _pristinePriorityScreen[offsetVisual]) {
 					// Draw High-Res Vector cleanly!
 					for (int by = 0; by < 3; by++) {
 						memcpy(&_displayScreen[offsetDisplay + by * _displayScreenWidth], &_hiresBackgroundScreen[offsetDisplay + by * _displayScreenWidth], 6);
@@ -1489,6 +1493,9 @@ int16 GfxMgr::priorityFromY(int16 yPos) const {
 void GfxMgr::backupPristineBackground() {
 	if (_pristineBackgroundScreen && _gameScreen) {
 		memcpy(_pristineBackgroundScreen, _gameScreen, _pixels);
+	}
+	if (_pristinePriorityScreen && _priorityScreen) {
+		memcpy(_pristinePriorityScreen, _priorityScreen, _pixels);
 	}
 }
 
