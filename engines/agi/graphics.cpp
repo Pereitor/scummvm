@@ -69,6 +69,8 @@ GfxMgr::GfxMgr(AgiBase *vm, GfxFont *font) : _vm(vm), _font(font) {
 	_gameScreen = nullptr;
 	_priorityScreen = nullptr;
 	_displayScreen = nullptr;
+	_pristineBackgroundScreen = nullptr;
+	_hiresBackgroundScreen = nullptr;
 }
 
 /**
@@ -151,17 +153,15 @@ void GfxMgr::initVideo() {
 		break;
 	}
 
-	if (_font->isFontHires() || forceHires) {
-		// Upscaling enable
-		_upscaledHires = DISPLAY_UPSCALED_640x400;
-		_displayScreenWidth = 640;
-		_displayScreenHeight = 400;
-		_displayFontWidth = 16;
-		_displayFontHeight = 16;
+	// ALWAYS enable the requested 960x600 vector resolution regardless of font mode
+	_upscaledHires = DISPLAY_UPSCALED_960x600;
+	_displayScreenWidth = 960;
+	_displayScreenHeight = 600;
+	_displayFontWidth = 24;
+	_displayFontHeight = 24;
 
-		_displayWidthMulAdjust = 2;
-		_displayHeightMulAdjust = 1;
-	}
+	_displayWidthMulAdjust = 4; // visual width 160 * (2+4) = 960
+	_displayHeightMulAdjust = 2; // visual height 200 * (1+2) = 600
 
 	// set up mouse cursors
 	switch (_vm->_renderMode) {
@@ -205,6 +205,8 @@ void GfxMgr::initVideo() {
 
 	_displayPixels = _displayScreenWidth * _displayScreenHeight;
 	_displayScreen = (byte *)calloc(_displayPixels, 1);
+	_pristineBackgroundScreen = (byte *)calloc(_pixels, 1);
+	_hiresBackgroundScreen = (byte *)calloc(_displayPixels, 1);
 
 	initGraphics(_displayScreenWidth, _displayScreenHeight);
 
@@ -226,6 +228,8 @@ void GfxMgr::deinitVideo() {
 	free(_displayScreen);
 	free(_gameScreen);
 	free(_priorityScreen);
+	free(_pristineBackgroundScreen);
+	free(_hiresBackgroundScreen);
 }
 
 void GfxMgr::setRenderStartOffset(uint16 offsetY) {
@@ -323,6 +327,10 @@ void GfxMgr::copyDisplayRectToScreen(int16 x, int16 adjX, int16 y, int16 adjY, i
 		adjX *= 2; adjY *= 2;
 		adjWidth *= 2; adjHeight *= 2;
 		break;
+	case DISPLAY_UPSCALED_960x600:
+		adjX *= 6; adjY *= 3;
+		adjWidth *= 6; adjHeight *= 3;
+		break;
 	default:
 		assert(0);
 		break;
@@ -393,6 +401,11 @@ void GfxMgr::debugShowMap(int mapNr) {
 void GfxMgr::clear(byte color, byte priority) {
 	memset(_gameScreen, color, _pixels);
 	memset(_priorityScreen, priority, _pixels);
+
+	if (_upscaledHires == DISPLAY_UPSCALED_960x600) {
+		memset(_pristineBackgroundScreen, color, _pixels);
+		memset(_hiresBackgroundScreen, color, _displayPixels);
+	}
 }
 
 /**
@@ -441,6 +454,15 @@ void GfxMgr::putPixelOnDisplay(int16 x, int16 y, byte color) {
 		_displayScreen[offset + _displayScreenWidth + 0] = color;
 		_displayScreen[offset + _displayScreenWidth + 1] = color;
 		break;
+	case DISPLAY_UPSCALED_960x600:
+		offset = (y * _displayScreenWidth) + x;
+
+		for (int by = 0; by < 3; ++by) {
+			for (int bx = 0; bx < 6; ++bx) {
+				_displayScreen[offset + (by * _displayScreenWidth) + bx] = color;
+			}
+		}
+		break;
 	default:
 		break;
 	}
@@ -456,6 +478,9 @@ void GfxMgr::putPixelOnDisplay(int16 x, int16 adjX, int16 y, int16 adjY, byte co
 		break;
 	case DISPLAY_UPSCALED_640x400:
 		adjX *= 2; adjY *= 2;
+		break;
+	case DISPLAY_UPSCALED_960x600:
+		adjX *= 6; adjY *= 3;
 		break;
 	default:
 		assert(0);
@@ -489,6 +514,19 @@ void GfxMgr::putFontPixelOnDisplay(int16 baseX, int16 baseY, int16 addX, int16 a
 			_displayScreen[offset + 1] = color;
 			_displayScreen[offset + _displayScreenWidth + 0] = color;
 			_displayScreen[offset + _displayScreenWidth + 1] = color;
+		}
+		break;
+	case DISPLAY_UPSCALED_960x600:
+		if (isHires) {
+			offset = ((baseY + addY) * _displayScreenWidth) + (baseX + addX);
+			_displayScreen[offset] = color;
+		} else {
+			offset = ((baseY + addY * 3) * _displayScreenWidth) + (baseX + addX * 3);
+			for (int by = 0; by < 3; ++by) {
+				for (int bx = 0; bx < 3; ++bx) {
+					_displayScreen[offset + (by * _displayScreenWidth) + bx] = color;
+				}
+			}
 		}
 		break;
 	default:
@@ -647,6 +685,33 @@ void GfxMgr::render_BlockEGA(int16 x, int16 y, int16 width, int16 height) {
 				remainingWidth--;
 			}
 			break;
+		case DISPLAY_UPSCALED_960x600:
+			// High-res composite logic: 
+			// We compare both color modifications and Priority values to verify foreground sprites (like Ego)
+			// _pristineBackgroundScreen contains the original 1x representation
+			// _hiresBackgroundScreen contains the 6x3 vector paths
+			// _priorityScreen defines AGI depth-sorting layer values
+			while (remainingWidth) {
+				curColor = _activeScreen[offsetVisual];
+				
+				// A priority of 4 is the base background priority in AGI.
+				// If the screen priority is <= 4, OR if the color has not been modified by a sprite
+				if (curColor == _pristineBackgroundScreen[offsetVisual] || _priorityScreen[offsetVisual] <= 4) {
+					// Draw High-Res Vector cleanly!
+					for (int by = 0; by < 3; by++) {
+						memcpy(&_displayScreen[offsetDisplay + by * _displayScreenWidth], &_hiresBackgroundScreen[offsetDisplay + by * _displayScreenWidth], 6);
+					}
+				} else {
+					// Sprite or UI overlay - Draw blocky 6x3 Retro sprite in front
+					for (int by = 0; by < 3; by++) {
+						memset(&_displayScreen[offsetDisplay + by * _displayScreenWidth], curColor, 6);
+					}
+				}
+				offsetVisual++;
+				offsetDisplay += 6;
+				remainingWidth--;
+			}
+			break;
 		default:
 			assert(0);
 			break;
@@ -658,6 +723,9 @@ void GfxMgr::render_BlockEGA(int16 x, int16 y, int16 width, int16 height) {
 		switch (_upscaledHires) {
 		case DISPLAY_UPSCALED_640x400:
 			offsetDisplay += _displayScreenWidth;
+			break;
+		case DISPLAY_UPSCALED_960x600:
+			offsetDisplay += _displayScreenWidth * 2;
 			break;
 		default:
 			break;
@@ -712,6 +780,9 @@ void GfxMgr::render_BlockCGA(int16 x, int16 y, int16 width, int16 height) {
 		switch (_upscaledHires) {
 		case DISPLAY_UPSCALED_640x400:
 			offsetDisplay += _displayScreenWidth;
+			break;
+		case DISPLAY_UPSCALED_960x600:
+			offsetDisplay += _displayScreenWidth * 2;
 			break;
 		default:
 			break;
@@ -862,6 +933,13 @@ void GfxMgr::transition_Amiga() {
 					posY += 42 * 2;
 				}
 				break;
+			case DISPLAY_UPSCALED_960x600:
+				for (int16 multiPixel = 0; multiPixel < 4; multiPixel++) {
+					screenStepPos = (posY * _displayScreenWidth) + posX;
+					_vm->_system->copyRectToScreen(_displayScreen + screenStepPos, _displayScreenWidth, posX, posY, 6, 3);
+					posY += 42 * 3;
+				}
+				break;
 			default:
 				assert(0);
 				break;
@@ -927,6 +1005,15 @@ void GfxMgr::transition_AtariSt() {
 					screenStepPos = (posY * _displayScreenWidth) + posX;
 					_vm->_system->copyRectToScreen(_displayScreen + screenStepPos, _displayScreenWidth, posX, posY, 2, 2);
 					posY += 21 * 2;
+				}
+				break;
+			case DISPLAY_UPSCALED_960x600:
+				posX *= 6; posY *= 3;
+				posY += _renderStartDisplayOffsetY; // adjust to only update the main area, not the status bar
+				for (int16 multiPixel = 0; multiPixel < 8; multiPixel++) {
+					screenStepPos = (posY * _displayScreenWidth) + posX;
+					_vm->_system->copyRectToScreen(_displayScreen + screenStepPos, _displayScreenWidth, posX, posY, 6, 3);
+					posY += 21 * 3;
 				}
 				break;
 			default:
@@ -1109,6 +1196,10 @@ void GfxMgr::drawDisplayRect(int16 x, int16 adjX, int16 y, int16 adjY, int16 wid
 		x += adjX * 2; y += adjY * 2;
 		width += adjWidth * 2; height += adjHeight * 2;
 		break;
+	case DISPLAY_UPSCALED_960x600:
+		x += adjX * 6; y += adjY * 3;
+		width += adjWidth * 6; height += adjHeight * 3;
+		break;
 	default:
 		assert(0);
 		break;
@@ -1205,6 +1296,10 @@ void GfxMgr::drawStringOnDisplay(int16 x, int16 adjX, int16 y, int16 adjY, const
 	case DISPLAY_UPSCALED_640x400:
 		x += adjX * 2;
 		y += adjY * 2;
+		break;
+	case DISPLAY_UPSCALED_960x600:
+		x += adjX * 6;
+		y += adjY * 3;
 		break;
 	default:
 		assert(0);
@@ -1387,8 +1482,40 @@ int16 GfxMgr::priorityToY(int16 priority) const {
 }
 
 int16 GfxMgr::priorityFromY(int16 yPos) const {
-	assert(yPos < SCRIPT_HEIGHT);
+	yPos = CLIP<int16>(yPos, 0, SCRIPT_HEIGHT - 1);
 	return _priorityTable[yPos];
+}
+
+void GfxMgr::backupPristineBackground() {
+	if (_pristineBackgroundScreen && _gameScreen) {
+		memcpy(_pristineBackgroundScreen, _gameScreen, _pixels);
+	}
+}
+
+byte GfxMgr::getPixelHighRes(int16 x, int16 y) const {
+	if (_upscaledHires != DISPLAY_UPSCALED_960x600 || !_hiresBackgroundScreen)
+		return 0;
+
+	// Shift Y down by the UI offset just like the real renderer
+	y += _renderStartDisplayOffsetY;
+	
+	if (x >= 0 && x < _displayScreenWidth && y >= 0 && y < _displayScreenHeight) {
+		return _hiresBackgroundScreen[(y * _displayScreenWidth) + x];
+	}
+	return 0;
+}
+
+void GfxMgr::setPixelHighRes(int16 x, int16 y, byte color) {
+	if (_upscaledHires != DISPLAY_UPSCALED_960x600 || !_hiresBackgroundScreen)
+		return;
+
+	// Shift Y down by the UI offset just like the real renderer
+	y += _renderStartDisplayOffsetY;
+	
+	if (x >= 0 && x < _displayScreenWidth && y >= 0 && y < _displayScreenHeight) {
+		uint32 offset = (y * _displayScreenWidth) + x;
+		_hiresBackgroundScreen[offset] = color;
+	}
 }
 
 
@@ -1517,6 +1644,31 @@ void GfxMgr::initMouseCursor(MouseCursorData *mouseCursor, const byte *bitmapDat
 		height *= 2;
 		hotspotX *= 2;
 		hotspotY *= 2;
+		break;
+	}
+	case DISPLAY_UPSCALED_960x600: {
+		mouseCursor->bitmapDataAllocated = (byte *)malloc(width * height * 18);
+		mouseCursor->bitmapData = mouseCursor->bitmapDataAllocated;
+
+		// Upscale mouse cursor
+		byte *upscaledData = mouseCursor->bitmapDataAllocated;
+
+		for (uint16 y = 0; y < height; y++) {
+			for (uint16 x = 0; x < width; x++) {
+				byte curColor = *bitmapData++;
+				for (int by = 0; by < 3; ++by) {
+					for (int bx = 0; bx < 6; ++bx) {
+						upscaledData[x * 6 + bx + (by * width * 6)] = curColor;
+					}
+				}
+			}
+			upscaledData += width * 6 * 3;
+		}
+
+		width *= 6;
+		height *= 3;
+		hotspotX *= 6;
+		hotspotY *= 3;
 		break;
 	}
 	default:

@@ -615,6 +615,66 @@ void PictureMgr::draw_Line(int16 x1, int16 y1, int16 x2, int16 y2) {
 		putVirtPixel(x, y);
 		i--;
 	} while (i > 0);
+
+	// ---- High-Res Duplicate Vector Pass ---- //
+	// If vector vectors are visible on screen, draw them directly onto the HiRes buffer
+	if (_scrOn && _gfx->getUpscaledHires() == DISPLAY_UPSCALED_960x600) {
+		int16 hr_x1 = x1 * 6 + 3; // +3 to center in the 6 pixel block
+		int16 hr_y1 = y1 * 3 + 1; // +1 to center in the 3 pixel block
+		int16 hr_x2 = x2 * 6 + 3;
+		int16 hr_y2 = y2 * 3 + 1;
+
+		int hr_stepX = 1;
+		int hr_deltaX = hr_x2 - hr_x1;
+		if (hr_deltaX < 0) {
+			hr_stepX = -1;
+			hr_deltaX = -hr_deltaX;
+		}
+
+		int hr_stepY = 1;
+		int hr_deltaY = hr_y2 - hr_y1;
+		if (hr_deltaY < 0) {
+			hr_stepY = -1;
+			hr_deltaY = -hr_deltaY;
+		}
+
+		int hr_i, hr_detdelta, hr_errorX, hr_errorY;
+		if (hr_deltaY > hr_deltaX) {
+			hr_i = hr_deltaY;
+			hr_detdelta = hr_deltaY;
+			hr_errorX = hr_deltaY / 2;
+			hr_errorY = 0;
+		} else {
+			hr_i = hr_deltaX;
+			hr_detdelta = hr_deltaX;
+			hr_errorX = 0;
+			hr_errorY = hr_deltaX / 2;
+		}
+
+		int hr_x = hr_x1;
+		int hr_y = hr_y1;
+		
+		_gfx->setPixelHighRes(hr_x, hr_y, _scrColor);
+
+		if (hr_i > 0) {
+			do {
+				hr_errorY += hr_deltaY;
+				if (hr_errorY >= hr_detdelta) {
+					hr_errorY -= hr_detdelta;
+					hr_y += hr_stepY;
+				}
+
+				hr_errorX += hr_deltaX;
+				if (hr_errorX >= hr_detdelta) {
+					hr_errorX -= hr_detdelta;
+					hr_x += hr_stepX;
+				}
+
+				_gfx->setPixelHighRes(hr_x, hr_y, _scrColor);
+				hr_i--;
+			} while (hr_i > 0);
+		}
+	}
 }
 
 /**
@@ -689,7 +749,7 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
 	if (!_scrOn && !_priOn)
 		return;
 
-	// Push initial pixel on the stack
+	// Push initial pixel on the stack (1x Engine Pass)
 	Common::Stack<Common::Point> stack;
 	stack.push(Common::Point(x, y));
 
@@ -709,6 +769,20 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
 		bool newspanDown = true;
 		for (c++; draw_FillCheck(c, p.y, true); c++) {
 			putVirtPixel(c, p.y);
+			
+			// NATIVE HIRES FILL:
+			// Automatically fill the corresponding 6x3 sub-pixels for this low-res cell!
+			// We only want to fill the absolute internal pixels so the external 960x600 line drawings remain smooth and visible.
+			if (_scrOn && _scrColor != 15 && _gfx->getUpscaledHires() == DISPLAY_UPSCALED_960x600) {
+				for (int subY = 0; subY < 3; subY++) {
+					for (int subX = 0; subX < 6; subX++) {
+						if (_gfx->getPixelHighRes(c * 6 + subX, p.y * 3 + subY) == 15) {
+							_gfx->setPixelHighRes(c * 6 + subX, p.y * 3 + subY, _scrColor);
+						}
+					}
+				}
+			}
+
 			if (draw_FillCheck(c, p.y - 1, false)) {
 				if (newspanUp) {
 					stack.push(Common::Point(c, p.y - 1));
@@ -777,6 +851,10 @@ void PictureMgr::decodePicture(int16 resourceNr, bool clearScreen, bool agi256, 
 	} else {
 		drawPicture_AGI256();
 	}
+	
+	// Backup the fully drawn, unmodified vector background to serve as 
+	// the reference state for our 960x600 real-time composite blitter!
+	_gfx->backupPristineBackground();
 
 	if (clearScreen) {
 		_vm->clearImageStack();

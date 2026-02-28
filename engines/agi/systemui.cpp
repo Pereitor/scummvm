@@ -1059,6 +1059,10 @@ Common::Rect SystemUI::createRect(int16 x, int16 adjX, int16 y, int16 adjY, int1
 		adjX *= 2; adjY *= 2;
 		adjWidth *= 2; adjHeight *= 2;
 		break;
+	case DISPLAY_UPSCALED_960x600:
+		adjX *= 6; adjY *= 3;
+		adjWidth *= 6; adjHeight *= 3;
+		break;
 	default:
 		assert(0);
 		break;

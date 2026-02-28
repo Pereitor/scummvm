@@ -35,7 +35,8 @@ namespace Agi {
 
 enum GfxScreenUpscaledMode {
 	DISPLAY_UPSCALED_DISABLED = 0,
-	DISPLAY_UPSCALED_640x400  = 1
+	DISPLAY_UPSCALED_640x400  = 1,
+	DISPLAY_UPSCALED_960x600  = 2
 };
 
 class AgiBase;
@@ -116,7 +117,9 @@ private:
 	byte *_gameScreen;     // 160x168 - screen, where the actual game content is drawn to (actual graphics, not including status line, prompt, etc.)
 	byte *_priorityScreen; // 160x168 - screen contains priority information of the game screen
 	// the term "visual screen" is effectively the display screen, but at 160x200 resolution. Used for coordinate translation
-	byte *_displayScreen;  // 320x200 or 640x400 - screen, that the game is rendered to and which is then copied to framebuffer
+	byte *_displayScreen;  // 320x200 or 640x400 or 960x600 - screen, that the game is rendered to and which is then copied to framebuffer
+	byte *_pristineBackgroundScreen; // 160x168 - identical to gameScreen but unmodified after picture decoding
+	byte *_hiresBackgroundScreen; // 960x600 - holds true high-res vector rendering
 
 	uint16 _displayScreenWidth;
 	uint16 _displayScreenHeight;
@@ -165,6 +168,10 @@ public:
 	void putPixelOnDisplay(int16 x, int16 y, byte color);
 	void putPixelOnDisplay(int16 x, int16 adjX, int16 y, int16 adjY, byte color);
 	void putFontPixelOnDisplay(int16 baseX, int16 baseY, int16 addX, int16 addY, byte color, bool isHires);
+
+	byte getPixelHighRes(int16 x, int16 y) const;
+	void setPixelHighRes(int16 x, int16 y, byte color);
+	void backupPristineBackground();
 
 	byte getColor(int16 x, int16 y) const;
 	byte getPriority(int16 x, int16 y) const;
