@@ -757,12 +757,71 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
 			putVirtPixel(c, p.y);
 			
 			// NATIVE HIRES FILL constrained safely inside the authenticated 1x boundary span:
-			// We only physically color the absolute internal blank 960x600 pixels so the thin external 960x600 vector lines remain sharp and visible.
 			if (_scrOn && _scrColor != 15 && _gfx->getUpscaledHires() == DISPLAY_UPSCALED_960x600) {
+				int hr_startX = c * 6;
+				int hr_startY = p.y * 3;
+				
+				// A strictly bounded 18x9 localized floodfill to seamlessly bleed
+				// the 6x3 high-res fill up to the adjacent Bresenham boundaries.
+				struct Pt { int16 x, y; };
+				Pt queue[162]; // 18 * 9
+				int qhead = 0, qtail = 0;
+				
+				bool visited[18][9];
+				memset(visited, 0, sizeof(visited));
+				
 				for (int subY = 0; subY < 3; subY++) {
 					for (int subX = 0; subX < 6; subX++) {
-						if (_gfx->getPixelHighRes(c * 6 + subX, p.y * 3 + subY) == 15) {
-							_gfx->setPixelHighRes(c * 6 + subX, p.y * 3 + subY, _scrColor);
+						int px = hr_startX + subX;
+						int py = hr_startY + subY;
+						if (_gfx->getPixelHighRes(px, py) == 15) {
+							queue[qtail++] = { (int16)px, (int16)py };
+							visited[subX + 6][subY + 3] = true;
+							_gfx->setPixelHighRes(px, py, _scrColor);
+						}
+					}
+				}
+				
+				int dx[4] = {0, 0, -1, 1};
+				int dy[4] = {-1, 1, 0, 0};
+				
+				while (qhead < qtail) {
+					Pt p_hr = queue[qhead++];
+					
+					for (int dir = 0; dir < 4; dir++) {
+						int nx_hr = p_hr.x + dx[dir];
+						int ny_hr = p_hr.y + dy[dir];
+						
+						if (nx_hr < 0 || nx_hr >= 960 || ny_hr < 0 || ny_hr >= 600) continue;
+						
+						int relX = nx_hr - (hr_startX - 6);
+						int relY = ny_hr - (hr_startY - 3);
+						if (relX < 0 || relX >= 18 || relY < 0 || relY >= 9) continue;
+						
+						if (visited[relX][relY]) continue;
+						visited[relX][relY] = true;
+						
+						if (_gfx->getPixelHighRes(nx_hr, ny_hr) == 15) {
+							int blockX = nx_hr / 6;
+							int blockY = ny_hr / 3;
+							bool allowed = false;
+							
+							if (blockX == c && blockY == p.y) {
+								allowed = true;
+							} else {
+								// Only bleed into a neighboring block if it actively contains a drawn boundary
+								// on the 1x grid. This intrinsically respects invisible priority lines.
+								if (blockX >= 0 && blockX < _width && blockY >= 0 && blockY < _height) {
+									if (_gfx->getColor(blockX, blockY) != 15) {
+										allowed = true;
+									}
+								}
+							}
+							
+							if (allowed) {
+								_gfx->setPixelHighRes(nx_hr, ny_hr, _scrColor);
+								queue[qtail++] = { (int16)nx_hr, (int16)ny_hr };
+							}
 						}
 					}
 				}
