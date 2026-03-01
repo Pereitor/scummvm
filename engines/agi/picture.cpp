@@ -342,8 +342,18 @@ void PictureMgr::plotPattern(byte x, byte y) {
 				}
 
 				// == box plot, != circle plot
-				if ((_patCode & 0x20) == 0 || (t & 0x03) == ditherCond)
+				if ((_patCode & 0x20) == 0 || (t & 0x03) == ditherCond) {
 					putVirtPixel(pen_x, pen_y);
+
+					// HI-RES TEXTURING: Mirror drawing to the 960x600 High Resolution background map!
+					if (_scrOn && _gfx->getUpscaledHires() == DISPLAY_UPSCALED_960x600) {
+						for (int subY = 0; subY < 3; subY++) {
+							for (int subX = 0; subX < 6; subX++) {
+								_gfx->setPixelHighRes(pen_x * 6 + subX, pen_y * 3 + subY, _scrColor);
+							}
+						}
+					}
+				}
 			}
 			pen_x++;
 		}
@@ -543,30 +553,6 @@ void PictureMgr::draw_Line(int16 x1, int16 y1, int16 x2, int16 y2) {
 	x2 = CLIP<int16>(x2, 0, _width - 1);
 	y1 = CLIP<int16>(y1, 0, _height - 1);
 	y2 = CLIP<int16>(y2, 0, _height - 1);
-
-	// Vertical line
-
-	if (x1 == x2) {
-		if (y1 > y2) {
-			SWAP(y1, y2);
-		}
-
-		for (; y1 <= y2; y1++)
-			putVirtPixel(x1, y1);
-
-		return;
-	}
-
-	// Horizontal line
-
-	if (y1 == y2) {
-		if (x1 > x2) {
-			SWAP(x1, x2);
-		}
-		for (; x1 <= x2; x1++)
-			putVirtPixel(x1, y1);
-		return;
-	}
 
 	int stepX = 1;
 	int deltaX = x2 - x1;
@@ -770,9 +756,8 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
 		for (c++; draw_FillCheck(c, p.y, true); c++) {
 			putVirtPixel(c, p.y);
 			
-			// NATIVE HIRES FILL:
-			// Automatically fill the corresponding 6x3 sub-pixels for this low-res cell!
-			// We only want to fill the absolute internal pixels so the external 960x600 line drawings remain smooth and visible.
+			// NATIVE HIRES FILL constrained safely inside the authenticated 1x boundary span:
+			// We only physically color the absolute internal blank 960x600 pixels so the thin external 960x600 vector lines remain sharp and visible.
 			if (_scrOn && _scrColor != 15 && _gfx->getUpscaledHires() == DISPLAY_UPSCALED_960x600) {
 				for (int subY = 0; subY < 3; subY++) {
 					for (int subX = 0; subX < 6; subX++) {
