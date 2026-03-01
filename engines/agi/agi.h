@@ -244,7 +244,7 @@ enum {
 	VM_VAR_MOUSE_X = 28,            // 28
 	VM_VAR_MOUSE_Y = 29             // 29
 };
-
+ 
 /**
  * Different monitor types.
  * Used with AGI variable 26 i.e. vMonitor.

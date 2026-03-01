@@ -70,6 +70,8 @@ GfxMgr::GfxMgr(AgiBase *vm, GfxFont *font) : _vm(vm), _font(font) {
 	_priorityScreen = nullptr;
 	_displayScreen = nullptr;
 	_pristineBackgroundScreen = nullptr;
+	_pristinePriorityScreen = nullptr;
+	_spriteUpdateMask = nullptr;
 	_hiresBackgroundScreen = nullptr;
 }
 
@@ -207,6 +209,7 @@ void GfxMgr::initVideo() {
 	_displayScreen = (byte *)calloc(_displayPixels, 1);
 	_pristineBackgroundScreen = (byte *)calloc(_pixels, 1);
 	_pristinePriorityScreen = (byte *)calloc(_pixels, 1);
+	_spriteUpdateMask = (bool *)calloc(_pixels, sizeof(bool));
 	_hiresBackgroundScreen = (byte *)calloc(_displayPixels, 1);
 
 	initGraphics(_displayScreenWidth, _displayScreenHeight);
@@ -231,6 +234,7 @@ void GfxMgr::deinitVideo() {
 	free(_priorityScreen);
 	free(_pristineBackgroundScreen);
 	free(_pristinePriorityScreen);
+	free(_spriteUpdateMask);
 	free(_hiresBackgroundScreen);
 }
 
@@ -407,6 +411,7 @@ void GfxMgr::clear(byte color, byte priority) {
 	if (_upscaledHires == DISPLAY_UPSCALED_960x600) {
 		memset(_pristineBackgroundScreen, color, _pixels);
 		memset(_pristinePriorityScreen, priority, _pixels);
+		memset(_spriteUpdateMask, 0, _pixels * sizeof(bool));
 		memset(_hiresBackgroundScreen, color, _displayPixels);
 	}
 }
@@ -698,9 +703,9 @@ void GfxMgr::render_BlockEGA(int16 x, int16 y, int16 width, int16 height) {
 				curColor = _activeScreen[offsetVisual];
 				
 				// If the color AND priority map match the original pristine background,
-				// it has NOT been modified by any sprites! (Ego going behind high-priority vectors
-				// remains valid because the sprite isn't drawn to the 1x buffer originally)
-				if (curColor == _pristineBackgroundScreen[offsetVisual] && _priorityScreen[offsetVisual] == _pristinePriorityScreen[offsetVisual]) {
+				// and NO sprite has affirmatively stamped this pixel via the SpriteUpdateMask,
+				// it means we are definitely looking at the unadulterated Native Background!
+				if (!_spriteUpdateMask[offsetVisual] && curColor == _pristineBackgroundScreen[offsetVisual] && _priorityScreen[offsetVisual] == _pristinePriorityScreen[offsetVisual]) {
 					// Draw High-Res Vector cleanly!
 					for (int by = 0; by < 3; by++) {
 						memcpy(&_displayScreen[offsetDisplay + by * _displayScreenWidth], &_hiresBackgroundScreen[offsetDisplay + by * _displayScreenWidth], 6);
@@ -1096,6 +1101,12 @@ void GfxMgr::block_restore(int16 x, int16 y, int16 width, int16 height, byte *bu
 	offset = startOffset;
 	while (remainingHeight) {
 		memcpy(_priorityScreen + offset, curBufferPtr, width);
+		
+		// Unmask sprites since the original background was just restored here
+		if (_spriteUpdateMask) {
+			memset(_spriteUpdateMask + offset, 0, width * sizeof(bool));
+		}
+		
 		offset += SCRIPT_WIDTH;
 		curBufferPtr += width;
 		remainingHeight--;
@@ -1525,6 +1536,13 @@ void GfxMgr::setPixelHighRes(int16 x, int16 y, byte color) {
 	}
 }
 
+void GfxMgr::setSpriteUpdateMask(int16 x, int16 y, bool isSprite) {
+	if (x >= 0 && x < SCRIPT_WIDTH && y >= 0 && y < SCRIPT_HEIGHT) {
+		if (_spriteUpdateMask) {
+			_spriteUpdateMask[(y * SCRIPT_WIDTH) + x] = isSprite;
+		}
+	}
+}
 
 /**
  * Initialize the color palette

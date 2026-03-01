@@ -249,13 +249,14 @@ void SpritesMgr::drawCel(ScreenObjEntry *screenObj) {
 					// control data found
 					if (_gfx->checkControlPixel(curX, curY, viewPriority)) {
 						_gfx->putPixel(curX, curY, GFX_SCREEN_MASK_VISUAL, curColor, 0);
+						_gfx->setSpriteUpdateMask(curX, curY, true);
 						isViewHidden = false;
 					}
 				} else if (screenPriority <= viewPriority) {
 					_gfx->putPixel(curX, curY, GFX_SCREEN_MASK_ALL, curColor, viewPriority);
+					_gfx->setSpriteUpdateMask(curX, curY, true);
 					isViewHidden = false;
 				}
-
 			}
 			curX++;
 		}

@@ -120,6 +120,7 @@ private:
 	byte *_displayScreen;  // 320x200 or 640x400 or 960x600 - screen, that the game is rendered to and which is then copied to framebuffer
 	byte *_pristineBackgroundScreen; // 160x168 - identical to gameScreen but unmodified after picture decoding
 	byte *_pristinePriorityScreen;   // 160x168 - identical to priorityScreen but unmodified after picture decoding
+	bool *_spriteUpdateMask;         // 160x168 - tracks dynamically rendered sprites/objects that modified the screen
 	byte *_hiresBackgroundScreen; // 960x600 - holds true high-res vector rendering
 
 	uint16 _displayScreenWidth;
@@ -173,6 +174,8 @@ public:
 	byte getPixelHighRes(int16 x, int16 y) const;
 	void setPixelHighRes(int16 x, int16 y, byte color);
 	void backupPristineBackground();
+	
+	void setSpriteUpdateMask(int16 x, int16 y, bool isSprite);
 
 	byte getColor(int16 x, int16 y) const;
 	byte getPriority(int16 x, int16 y) const;

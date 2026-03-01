@@ -640,7 +640,11 @@ void PictureMgr::draw_Line(int16 x1, int16 y1, int16 x2, int16 y2) {
 		int hr_x = hr_x1;
 		int hr_y = hr_y1;
 		
-		_gfx->setPixelHighRes(hr_x, hr_y, _scrColor);
+		for (int by = -1; by <= 1; by++) {
+			for (int bx = -3; bx <= 2; bx++) {
+				_gfx->setPixelHighRes(hr_x + bx, hr_y + by, _scrColor);
+			}
+		}
 
 		if (hr_i > 0) {
 			do {
@@ -656,7 +660,11 @@ void PictureMgr::draw_Line(int16 x1, int16 y1, int16 x2, int16 y2) {
 					hr_x += hr_stepX;
 				}
 
-				_gfx->setPixelHighRes(hr_x, hr_y, _scrColor);
+				for (int by = -1; by <= 1; by++) {
+					for (int bx = -3; bx <= 2; bx++) {
+						_gfx->setPixelHighRes(hr_x + bx, hr_y + by, _scrColor);
+					}
+				}
 				hr_i--;
 			} while (hr_i > 0);
 		}
@@ -806,7 +814,7 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
 							int blockY = ny_hr / 3;
 							bool allowed = false;
 							
-							if (blockX == c && blockY == p.y) {
+							if ((uint)blockX == c && blockY == p.y) {
 								allowed = true;
 							} else {
 								// Only bleed into a neighboring block if it actively contains a drawn boundary
