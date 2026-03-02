@@ -117,11 +117,11 @@ private:
 	byte *_gameScreen;     // 160x168 - screen, where the actual game content is drawn to (actual graphics, not including status line, prompt, etc.)
 	byte *_priorityScreen; // 160x168 - screen contains priority information of the game screen
 	// the term "visual screen" is effectively the display screen, but at 160x200 resolution. Used for coordinate translation
-	byte *_displayScreen;  // 320x200 or 640x400 or 960x600 - screen, that the game is rendered to and which is then copied to framebuffer
+	uint32 *_displayScreen;  // 320x200 or 640x400 or 960x600 - screen, that the game is rendered to and which is then copied to framebuffer
 	byte *_pristineBackgroundScreen; // 160x168 - identical to gameScreen but unmodified after picture decoding
 	byte *_pristinePriorityScreen;   // 160x168 - identical to priorityScreen but unmodified after picture decoding
 	bool *_spriteUpdateMask;         // 160x168 - tracks dynamically rendered sprites/objects that modified the screen
-	byte *_hiresBackgroundScreen; // 960x600 - holds true high-res vector rendering
+	uint32 *_hiresBackgroundScreen; // 960x600 - holds true high-res vector rendering
 
 	uint16 _displayScreenWidth;
 	uint16 _displayScreenHeight;
@@ -151,6 +151,9 @@ public:
 	uint16 getDisplayScreenWidth() const {
 		return _displayScreenWidth;
 	}
+	uint16 getDisplayScreenHeight() const {
+		return _displayScreenHeight;
+	}
 	uint16 getDisplayFontWidth() const {
 		return _displayFontWidth;
 	}
@@ -171,8 +174,9 @@ public:
 	void putPixelOnDisplay(int16 x, int16 adjX, int16 y, int16 adjY, byte color);
 	void putFontPixelOnDisplay(int16 baseX, int16 baseY, int16 addX, int16 addY, byte color, bool isHires);
 
-	byte getPixelHighRes(int16 x, int16 y) const;
-	void setPixelHighRes(int16 x, int16 y, byte color);
+	uint32 getPaletteColor32(byte colorIndex) const;
+	uint32 getPixelHighRes(int16 x, int16 y) const;
+	void setPixelHighRes(int16 x, int16 y, uint32 color);
 	void backupPristineBackground();
 	
 	void setSpriteUpdateMask(int16 x, int16 y, bool isSprite);

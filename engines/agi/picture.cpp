@@ -23,6 +23,7 @@
 #include "agi/graphics.h"
 
 #include "common/textconsole.h"
+#include <math.h>
 
 namespace Agi {
 	
@@ -347,9 +348,10 @@ void PictureMgr::plotPattern(byte x, byte y) {
 
 					// HI-RES TEXTURING: Mirror drawing to the 960x600 High Resolution background map!
 					if (_scrOn && _gfx->getUpscaledHires() == DISPLAY_UPSCALED_960x600) {
+						uint32 scrColor32 = _gfx->getPaletteColor32(_scrColor);
 						for (int subY = 0; subY < 3; subY++) {
 							for (int subX = 0; subX < 6; subX++) {
-								_gfx->setPixelHighRes(pen_x * 6 + subX, pen_y * 3 + subY, _scrColor);
+								_gfx->setPixelHighRes(pen_x * 6 + subX, pen_y * 3 + subY, scrColor32);
 							}
 						}
 					}
@@ -604,69 +606,80 @@ void PictureMgr::draw_Line(int16 x1, int16 y1, int16 x2, int16 y2) {
 
 	// ---- High-Res Duplicate Vector Pass ---- //
 	// If vector vectors are visible on screen, draw them directly onto the HiRes buffer
-	if (_scrOn && _gfx->getUpscaledHires() == DISPLAY_UPSCALED_960x600) {
-		int16 hr_x1 = x1 * 6 + 3; // +3 to center in the 6 pixel block
-		int16 hr_y1 = y1 * 3 + 1; // +1 to center in the 3 pixel block
-		int16 hr_x2 = x2 * 6 + 3;
-		int16 hr_y2 = y2 * 3 + 1;
+	draw_LineHighRes(x1, y1, x2, y2);
+}
 
-		int hr_stepX = 1;
-		int hr_deltaX = hr_x2 - hr_x1;
-		if (hr_deltaX < 0) {
-			hr_stepX = -1;
-			hr_deltaX = -hr_deltaX;
-		}
+/**
+ * Draws a high-resolution anti-aliased line using Xiaolin Wu's algorithm.
+ */
+void PictureMgr::draw_LineHighRes(int16 x1, int16 y1, int16 x2, int16 y2) {
+	if (!_scrOn || _gfx->getUpscaledHires() != DISPLAY_UPSCALED_960x600)
+		return;
 
-		int hr_stepY = 1;
-		int hr_deltaY = hr_y2 - hr_y1;
-		if (hr_deltaY < 0) {
-			hr_stepY = -1;
-			hr_deltaY = -hr_deltaY;
-		}
+	int16 hr_x1 = (x1 * 6) + 3;
+	int16 hr_y1 = (y1 * 3) + 1;
+	int16 hr_x2 = (x2 * 6) + 3;
+	int16 hr_y2 = (y2 * 3) + 1;
 
-		int hr_i, hr_detdelta, hr_errorX, hr_errorY;
-		if (hr_deltaY > hr_deltaX) {
-			hr_i = hr_deltaY;
-			hr_detdelta = hr_deltaY;
-			hr_errorX = hr_deltaY / 2;
-			hr_errorY = 0;
-		} else {
-			hr_i = hr_deltaX;
-			hr_detdelta = hr_deltaX;
-			hr_errorX = 0;
-			hr_errorY = hr_deltaX / 2;
-		}
+	// Xiaolin Wu Anti-Aliasing with an elliptical footprint
+	// We map high-res pixels to a normalized native 160x200 space (dividing by 6 and 3)
+	// so the math evaluates pure geometric line distance!
+	int minX = MIN(hr_x1, hr_x2) - 6;
+	int maxX = MAX(hr_x1, hr_x2) + 6;
+	int minY = MIN(hr_y1, hr_y2) - 3;
+	int maxY = MAX(hr_y1, hr_y2) + 3;
 
-		int hr_x = hr_x1;
-		int hr_y = hr_y1;
-		
-		for (int by = -1; by <= 1; by++) {
-			for (int bx = -3; bx <= 2; bx++) {
-				_gfx->setPixelHighRes(hr_x + bx, hr_y + by, _scrColor);
+	minX = CLIP<int>(minX, 0, _gfx->getDisplayScreenWidth() - 1);
+	maxX = CLIP<int>(maxX, 0, _gfx->getDisplayScreenWidth() - 1);
+	minY = CLIP<int>(minY, 0, _gfx->getDisplayScreenHeight() - 1);
+	maxY = CLIP<int>(maxY, 0, _gfx->getDisplayScreenHeight() - 1);
+
+	uint32 fg = _gfx->getPaletteColor32(_scrColor);
+	uint8 fR = (fg >> 16) & 0xFF;
+	uint8 fG = (fg >> 8) & 0xFF;
+	uint8 fB = fg & 0xFF;
+
+	float ax = hr_x1 / 6.0f;
+	float ay = hr_y1 / 3.0f;
+	float bx = hr_x2 / 6.0f;
+	float by = hr_y2 / 3.0f;
+	float l2 = (bx - ax)*(bx - ax) + (by - ay)*(by - ay);
+
+	for (int y = minY; y <= maxY; y++) {
+		for (int x = minX; x <= maxX; x++) {
+			float px = x / 6.0f;
+			float py = y / 3.0f;
+			
+			float t = 0.0f;
+			if (l2 != 0.0f) {
+				t = ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / l2;
+				t = CLIP<float>(t, 0.0f, 1.0f);
 			}
-		}
-
-		if (hr_i > 0) {
-			do {
-				hr_errorY += hr_deltaY;
-				if (hr_errorY >= hr_detdelta) {
-					hr_errorY -= hr_detdelta;
-					hr_y += hr_stepY;
-				}
-
-				hr_errorX += hr_deltaX;
-				if (hr_errorX >= hr_detdelta) {
-					hr_errorX -= hr_detdelta;
-					hr_x += hr_stepX;
-				}
-
-				for (int by = -1; by <= 1; by++) {
-					for (int bx = -3; bx <= 2; bx++) {
-						_gfx->setPixelHighRes(hr_x + bx, hr_y + by, _scrColor);
-					}
-				}
-				hr_i--;
-			} while (hr_i > 0);
+			float proj_x = ax + t * (bx - ax);
+			float proj_y = ay + t * (by - ay);
+			
+			float dx = px - proj_x;
+			float dy = py - proj_y;
+			float dist = sqrt(dx*dx + dy*dy);
+			
+			float alpha = 0.0f;
+			// Radius of 0.6 perfectly closes the classic AGI native gap
+			// while leaving the edges completely smooth!
+			if (dist <= 0.35f) alpha = 1.0f;
+			else if (dist < 0.6f) alpha = 1.0f - ((dist - 0.35f) / 0.25f);
+			
+			if (alpha > 0.0f) {
+				uint32 bg = _gfx->getPixelHighRes(x, y);
+				uint8 bR = (bg >> 16) & 0xFF;
+				uint8 bG = (bg >> 8) & 0xFF;
+				uint8 bB = bg & 0xFF;
+				
+				uint8 nR = bR + (fR - bR) * alpha;
+				uint8 nG = bG + (fG - bG) * alpha;
+				uint8 nB = bB + (fB - bB) * alpha;
+				
+				_gfx->setPixelHighRes(x, y, 0xFF000000 | (nR << 16) | (nG << 8) | nB);
+			}
 		}
 	}
 }
@@ -768,9 +781,11 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
 			if (_scrOn && _scrColor != 15 && _gfx->getUpscaledHires() == DISPLAY_UPSCALED_960x600) {
 				int hr_startX = c * 6;
 				int hr_startY = p.y * 3;
+				uint32 emptyColor32 = _gfx->getPaletteColor32(15);
+				uint32 scrColor32 = _gfx->getPaletteColor32(_scrColor);
 				
 				// A strictly bounded 18x9 localized floodfill to seamlessly bleed
-				// the 6x3 high-res fill up to the adjacent Bresenham boundaries.
+				// the 6x3 high-res fill up to the adjacent Xiaolin Wu boundaries.
 				struct Pt { int16 x, y; };
 				Pt queue[162]; // 18 * 9
 				int qhead = 0, qtail = 0;
@@ -782,10 +797,10 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
 					for (int subX = 0; subX < 6; subX++) {
 						int px = hr_startX + subX;
 						int py = hr_startY + subY;
-						if (_gfx->getPixelHighRes(px, py) == 15) {
+						if (_gfx->getPixelHighRes(px, py) == emptyColor32) {
 							queue[qtail++] = { (int16)px, (int16)py };
 							visited[subX + 6][subY + 3] = true;
-							_gfx->setPixelHighRes(px, py, _scrColor);
+							_gfx->setPixelHighRes(px, py, scrColor32);
 						}
 					}
 				}
@@ -809,7 +824,7 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
 						if (visited[relX][relY]) continue;
 						visited[relX][relY] = true;
 						
-						if (_gfx->getPixelHighRes(nx_hr, ny_hr) == 15) {
+						if (_gfx->getPixelHighRes(nx_hr, ny_hr) == emptyColor32) {
 							int blockX = nx_hr / 6;
 							int blockY = ny_hr / 3;
 							bool allowed = false;
@@ -827,7 +842,7 @@ void PictureMgr::draw_Fill(int16 x, int16 y) {
 							}
 							
 							if (allowed) {
-								_gfx->setPixelHighRes(nx_hr, ny_hr, _scrColor);
+								_gfx->setPixelHighRes(nx_hr, ny_hr, scrColor32);
 								queue[qtail++] = { (int16)nx_hr, (int16)ny_hr };
 							}
 						}

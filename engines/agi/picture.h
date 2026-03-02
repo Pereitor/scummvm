@@ -85,6 +85,7 @@ protected:
 	void draw_SetNibblePriority();
 
 	virtual void draw_Line(int16 x1, int16 y1, int16 x2, int16 y2);
+	void draw_LineHighRes(int16 x1, int16 y1, int16 x2, int16 y2);
 	void draw_LineShort();
 	void draw_LineAbsolute();
 
